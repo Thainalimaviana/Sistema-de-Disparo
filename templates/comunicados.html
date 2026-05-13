@@ -1,0 +1,1210 @@
+{% extends "base.html" %}
+{% block title %}Comunicados - Consig Tech{% endblock %}
+{% block page_title %}Comunicados{% endblock %}
+
+{% block header_actions %}
+<div class="com-header-right" style="display: flex; align-items: center; gap: 12px;">
+    <button class="btn-premium-outline" onclick="toggleFiltros()"><i class="fas fa-filter" style="font-size: 0.8rem;"></i> Filtros</button>
+    <button class="btn-premium-solid" onclick="marcarTodosLidos()"><i class="far fa-check-circle" style="font-size: 0.8rem;"></i> Marcar Tudo como Lido</button>
+</div>
+{% endblock %}
+
+
+{% block head %}
+<style>
+.comunicados-wrapper {
+    padding: 20px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ── Kanban Board Layout ── */
+.kanban-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    min-height: 600px;
+}
+@media (max-width: 900px) {
+    .kanban-board {
+        grid-template-columns: 1fr;
+    }
+}
+.kanban-column {
+    background: rgba(248, 250, 252, 0.5);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+}
+.theme-dark .kanban-column {
+    background: rgba(30, 41, 59, 0.3);
+    border-color: #334155;
+}
+
+.column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px 10px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: 5px;
+}
+.column-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.column-count {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.theme-dark .column-count { background: #334155; color: #94a3b8; }
+
+/* Column Colors */
+.col-urgente .column-header { border-bottom-color: #ef4444; }
+.col-urgente .column-title i { color: #ef4444; }
+.col-info .column-header { border-bottom-color: #3b82f6; }
+.col-info .column-title i { color: #3b82f6; }
+.col-metas .column-header { border-bottom-color: #10b981; }
+.col-metas .column-title i { color: #10b981; }
+.col-outros .column-header { border-bottom-color: #94a3b8; }
+.col-outros .column-title i { color: #94a3b8; }
+
+.column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+/* Kanban Cards */
+.kanban-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    cursor: default;
+}
+.kanban-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+}
+.kanban-card.fixed-card {
+    border: 2px solid #fbbf24;
+    background: #fffdf5;
+}
+.theme-dark .kanban-card.fixed-card {
+    border-color: #d97706;
+    background: rgba(217, 119, 6, 0.05);
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+.card-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+}
+.tag-urgente { background: #fee2e2; color: #dc2626; }
+.tag-informativo { background: #dbeafe; color: #2563eb; }
+.tag-meta { background: #dcfce7; color: #166534; }
+.tag-aviso { background: #ffedd5; color: #ea580c; }
+.tag-parabenizacao { background: #f3e8ff; color: #7e22ce; }
+
+.card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+}
+.card-desc {
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: pre-wrap;
+}
+.theme-dark .card-desc { color: #94a3b8; }
+
+/* ── Botões Premium (Estilo Clean Green) ── */
+.btn-premium-outline {
+    background: #fff;
+    border: 1px solid #22c55e; /* Green border */
+    color: #1e293b;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s ease;
+}
+.theme-dark .btn-premium-outline { background: #0f172a; border-color: #16a34a; color: #f8fafc; }
+.btn-premium-outline:hover { 
+    background: #f0fdf4;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(34, 197, 94, 0.1);
+}
+
+.btn-premium-solid {
+    background: #fff;
+    border: 1px solid #22c55e;
+    color: #1e293b;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s ease;
+}
+.theme-dark .btn-premium-solid { background: #0f172a; border-color: #16a34a; color: #f8fafc; }
+.btn-premium-solid:hover { 
+    background: #22c55e;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+
+.btn-card-lido {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #dcfce7;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.3s ease;
+}
+.theme-dark .btn-card-lido { background: rgba(22, 163, 74, 0.1); border-color: rgba(22, 163, 74, 0.2); }
+.btn-card-lido:hover { 
+    background: #16a34a; 
+    color: #fff; 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(22, 163, 74, 0.2);
+}
+.btn-card-lido.is-read {
+    background: #f8fafc;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: default;
+}
+.theme-dark .btn-card-lido.is-read { background: #1e293b; border-color: #334155; }
+.btn-card-lido.is-read:hover { transform: none; box-shadow: none; background: #f8fafc; color: #94a3b8; }
+
+/* ── Paginação Premium ── */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 30px;
+    padding: 20px;
+}
+.btn-page {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #475569;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.theme-dark .btn-page { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+.btn-page:hover { 
+    border-color: #22c55e; 
+    color: #22c55e;
+    transform: translateY(-2px);
+}
+.btn-page.active {
+    background: #22c55e;
+    color: #fff;
+    border-color: #22c55e;
+    box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2);
+}
+.btn-page:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+.page-info {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin: 0 15px;
+    font-weight: 600;
+}
+
+
+
+
+.card-actions {
+    display: flex;
+    gap: 8px;
+}
+.btn-card-action {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: color 0.2s, transform 0.2s;
+    padding: 2px;
+}
+.btn-card-action:hover { color: var(--primary); transform: scale(1.1); }
+.btn-card-action.danger:hover { color: #ef4444; }
+
+.card-unread-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid var(--bg-panel);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* Modal Estilo Kanban */
+.modal-kanban-desc {
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.6;
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border-left: 4px solid var(--primary);
+}
+.theme-dark .modal-kanban-desc { background: #0f172a; color: #cbd5e1; }
+
+/* Filtros */
+.filters-bar {
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+}
+.theme-dark .filters-bar {
+    background: rgba(22, 163, 74, 0.05);
+    border-color: rgba(22, 163, 74, 0.1);
+}
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+.filter-group label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+.theme-dark .filter-group label { color: #cbd5e1; }
+.filter-group select {
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #1e293b;
+    background: #fff;
+    outline: none;
+    cursor: pointer;
+}
+.theme-dark .filter-group select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+}
+.btn-clear {
+    background: transparent;
+    border: none;
+    color: #475569;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 10px 14px;
+}
+.theme-dark .btn-clear { color: #94a3b8; }
+
+/* Stats Row */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+.stat-card {
+    background: var(--bg-panel);
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+.theme-dark .stat-card { border-color: #334155; }
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    position: relative;
+}
+.stat-blue .stat-icon { background: #dbeafe; color: #2563eb; }
+.stat-red .stat-icon { background: #fee2e2; color: #dc2626; }
+.stat-orange .stat-icon { background: #ffedd5; color: #ea580c; }
+.stat-gray .stat-icon { background: #f1f5f9; color: #475569; }
+.theme-dark .stat-gray .stat-icon { background: #334155; color: #cbd5e1; }
+
+.stat-red { background: #fef2f2; border-color: #fee2e2; }
+.stat-orange { background: #fff7ed; border-color: #ffedd5; }
+.theme-dark .stat-red { background: rgba(220, 38, 38, 0.05); border-color: rgba(220, 38, 38, 0.1); }
+.theme-dark .stat-orange { background: rgba(234, 88, 12, 0.05); border-color: rgba(234, 88, 12, 0.1); }
+
+.stat-icon .badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-info { display: flex; flex-direction: column; }
+.stat-title { font-size: 0.8rem; font-weight: 600; color: #64748b; }
+.stat-val { font-size: 1.4rem; font-weight: 800; color: var(--text-main); line-height: 1.2; }
+.stat-blue .stat-val { color: #2563eb; }
+.stat-red .stat-val { color: #dc2626; }
+.stat-orange .stat-val { color: #ea580c; }
+
+/* Modal Minimalista e Profissional */
+.modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.4);
+    backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;
+    padding: 20px;
+}
+.modal-overlay.open { display: flex; animation: fadeOverlay 0.2s ease; }
+
+.modal-content-pro {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.theme-dark .modal-content-pro { background: #1e293b; border: 1px solid #334155; }
+
+.modal-head {
+    padding: 24px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.theme-dark .modal-head { border-bottom-color: #334155; }
+.modal-head h3 { margin: 0; font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+.theme-dark .modal-head h3 { color: #f8fafc; }
+
+.modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+}
+.theme-dark .form-group label { color: #94a3b8; }
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: #fff;
+    color: #0f172a;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+.theme-dark .form-input { background: #0f172a; border-color: #334155; color: #f8fafc; }
+.form-input:focus { border-color: #2563eb; }
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.checkbox-group input { width: 18px; height: 18px; accent-color: #ea580c; cursor: pointer; }
+.checkbox-group label { margin: 0; font-weight: 600; color: #0f172a; cursor: pointer; }
+.theme-dark .checkbox-group label { color: #f8fafc; }
+
+.modal-foot {
+    padding: 20px 24px;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-radius: 0 0 16px 16px;
+}
+.theme-dark .modal-foot { background: #0f172a; border-top-color: #334155; }
+
+.btn-sec { padding: 10px 18px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 600; color: #475569; cursor: pointer; }
+.theme-dark .btn-sec { background: #1e293b; border-color: #475569; color: #cbd5e1; }
+.btn-pri { padding: 10px 24px; background: #2563eb; border: none; border-radius: 8px; font-weight: 600; color: #fff; cursor: pointer; }
+
+@keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUpModal { from { opacity: 0; transform: translateY(30px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* Modal de Visualização Expandida Premium */
+.modal-view-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeOverlay 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-view-content {
+    background: var(--bg-panel);
+    width: 100%;
+    max-width: 850px;
+    max-height: 85vh;
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
+    animation: slideUpModal 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-view-header {
+    padding: 35px 40px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-panel);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.modal-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+.modal-view-title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--text-main);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+.modal-view-body {
+    padding: 40px;
+    overflow-y: auto;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    color: var(--text-main);
+    white-space: pre-wrap;
+}
+.modal-view-footer {
+    padding: 24px 40px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    background: rgba(248, 250, 252, 0.3);
+}
+.theme-dark .modal-view-footer { background: rgba(15, 23, 42, 0.3); }
+
+.btn-close-view {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(241, 245, 249, 0.5);
+    border: none;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1.2rem;
+}
+.theme-dark .btn-close-view { background: rgba(30, 41, 59, 0.8); }
+.btn-close-view:hover { 
+    background: #fee2e2; 
+    color: #ef4444; 
+    transform: rotate(90deg); 
+}
+
+/* Empty State */
+.empty-box {
+    text-align: center; padding: 60px 20px; color: #64748b; background: var(--bg-panel);
+    border: 1px dashed #cbd5e1; border-radius: 12px;
+}
+.theme-dark .empty-box { border-color: #334155; color: #94a3b8; }
+.empty-box i { font-size: 3rem; margin-bottom: 16px; color: #cbd5e1; }
+.theme-dark .empty-box i { color: #475569; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="comunicados-wrapper">
+    
+    <p style="color: #28a745; font-size: 0.95rem; margin-top: -20px; margin-bottom: 25px;">Mensagens importantes da administração</p>
+
+    <!-- Filters Bar (oculta por padrão) -->
+    <div class="filters-bar" id="filtrosBar" style="display:none;">
+        <div class="filter-group" style="max-width: 300px;">
+            <label>Filtrar por Tipo</label>
+            <select id="filterTipo">
+                <option value="all">Todos os tipos</option>
+                <option value="informativo">📘 Informativo</option>
+                <option value="urgente">🔴 Urgente</option>
+                <option value="meta">🎯 Meta</option>
+                <option value="aviso">⚠️ Aviso</option>
+                <option value="parabenizacao">🏆 Parabenização</option>
+            </select>
+        </div>
+        <div class="filter-group" style="max-width: 300px;">
+            <label>Visualização</label>
+            <select id="filterVis">
+                <option value="ativos">Todos os Comunicados</option>
+                <option value="fixados">Apenas Fixados</option>
+                <option value="nao_lidos">Apenas Não Lidos</option>
+                <option value="arquivados">Arquivados</option>
+            </select>
+        </div>
+        <button class="btn-clear"><i class="fas fa-times"></i> Limpar</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card stat-blue" onclick="setFiltroVis('ativos')">
+            <div class="stat-icon"><i class="fas fa-bullhorn"></i></div>
+            <div class="stat-info"><span class="stat-title">Total Ativos</span><span class="stat-val" id="statTotal">0</span></div>
+        </div>
+        <div class="stat-card stat-red" onclick="setFiltroVis('nao_lidos')">
+            <div class="stat-icon"><i class="fas fa-bullhorn"></i><span class="badge" id="badgeNaoLidos">0</span></div>
+            <div class="stat-info"><span class="stat-title">Não Lidos</span><span class="stat-val" id="statNaoLidos">0</span></div>
+        </div>
+        <div class="stat-card stat-orange" onclick="setFiltroVis('fixados')">
+            <div class="stat-icon"><i class="fas fa-thumbtack"></i></div>
+            <div class="stat-info"><span class="stat-title">Fixados</span><span class="stat-val" id="statFixados">0</span></div>
+        </div>
+        <div class="stat-card stat-gray" onclick="setFiltroVis('arquivados')">
+            <div class="stat-icon"><i class="fas fa-archive"></i></div>
+            <div class="stat-info"><span class="stat-title">Arquivados</span><span class="stat-val" id="statArquivados">0</span></div>
+        </div>
+    </div>
+
+    <!-- Kanban Board (2 Colunas Premium) -->
+    <div class="kanban-board" id="kanbanBoard">
+        <!-- Coluna Prioritários -->
+        <div class="kanban-column col-urgente" id="colUrgente">
+            <div class="column-header">
+                <div class="column-title"><i class="fas fa-fire"></i> Prioritários & Metas</div>
+                <div class="column-count" id="countPrioritario">0</div>
+            </div>
+            <div class="column-cards" id="cardsPrioritario"></div>
+        </div>
+
+        <!-- Coluna Geral -->
+        <div class="kanban-column col-info" id="colInfo">
+            <div class="column-header">
+                <div class="column-title"><i class="fas fa-newspaper"></i> Informativos & Geral</div>
+                <div class="column-count" id="countGeral">0</div>
+            </div>
+            <div class="column-cards" id="cardsGeral"></div>
+        </div>
+    </div>
+
+    <!-- Paginação -->
+    <div id="pagination" class="pagination-container"></div>
+</div>
+
+{% if is_admin %}
+<!-- Modal Profissional de Edição -->
+<div class="modal-overlay" id="modalEdicao">
+    <div class="modal-content-pro">
+        <div class="modal-head">
+            <h3>Editar Comunicado</h3>
+            <button class="btn-close-modal" onclick="fecharModal()" style="background:none; border:none; font-size:1.2rem; color:#64748b; cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editId">
+            
+            <div class="form-group">
+                <label>Título</label>
+                <input type="text" class="form-input" id="editTitulo">
+            </div>
+            
+            <div class="form-group">
+                <label>Tipo</label>
+                <select class="form-input" id="editTipo">
+                    <option value="informativo">📘 Informativo</option>
+                    <option value="urgente">🔴 Urgente</option>
+                    <option value="meta">🎯 Meta</option>
+                    <option value="aviso">⚠️ Aviso</option>
+                    <option value="parabenizacao">🏆 Parabenização</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Mensagem</label>
+                <textarea class="form-input" id="editMensagem" rows="4"></textarea>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="editFixado">
+                <label for="editFixado">Fixar no Topo</label>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn-sec" onclick="fecharModal()">Cancelar</button>
+            <button class="btn-pri" onclick="salvarEdicao()">Salvar Alterações</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+<!-- Modal de Visualização Expandida Premium -->
+<div class="modal-view-overlay" id="modalViewCom" onclick="fecharViewCom(event)">
+    <div class="modal-view-content" onclick="event.stopPropagation()">
+        <div class="modal-view-header">
+            <div class="modal-header-meta">
+                <span class="card-tag" id="viewComTag">TIPO</span>
+                <span style="color:#94a3b8; font-size:0.8rem;" id="viewComMeta"><i class="far fa-user"></i> Autor</span>
+            </div>
+            <h2 id="viewComTitle" class="modal-view-title">Título do Comunicado</h2>
+            <button class="btn-close-view" onclick="fecharViewCom()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-view-body" id="viewComBody">
+            Conteúdo aqui...
+        </div>
+        <div class="modal-view-footer">
+            <div id="viewComActions" style="display:flex; gap:12px; width:100%; justify-content:flex-end;">
+                <!-- Botões injetados via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const isAdmin = {{ 'true' if is_admin else 'false' }};
+const currentUser = "{{ session['user'] }}";
+let todosComunicados = [];
+let paginaAtual = 1;
+const itensPorPagina = 6; // Ajuste o limite aqui (6 por página fica bom em 2 colunas)
+
+document.addEventListener('DOMContentLoaded', () => {
+    carregarComunicados();
+    
+    document.getElementById('filterTipo').addEventListener('change', () => { paginaAtual = 1; renderComunicados(); });
+    document.getElementById('filterVis').addEventListener('change', () => { paginaAtual = 1; renderComunicados(); });
+    
+    document.querySelector('.btn-clear').addEventListener('click', () => {
+        document.getElementById('filterTipo').value = 'all';
+        document.getElementById('filterVis').value = 'ativos';
+        paginaAtual = 1;
+        renderComunicados();
+    });
+});
+
+function getEstiloTipo(tipo) {
+    tipo = (tipo || '').toLowerCase();
+    if(tipo.includes('urgente')) {
+        return { borderColor: 'border-red', iconBg: 'icon-bg-red', icon: 'fa-exclamation-triangle', tagClass: 'tag-urgente', label: 'Urgente' };
+    }
+    if(tipo.includes('meta')) {
+        return { borderColor: 'border-blue', iconBg: 'icon-bg-blue', icon: 'fa-bullseye', tagClass: 'tag-meta', label: 'Meta' };
+    }
+    if(tipo.includes('parabeniza')) {
+        return { borderColor: 'border-green', iconBg: 'icon-bg-green', icon: 'fa-trophy', tagClass: 'tag-parabenizacao', label: 'Parabenização' };
+    }
+    if(tipo.includes('aviso')) {
+        return { borderColor: 'border-orange', iconBg: 'icon-bg-orange', icon: 'fa-exclamation-circle', tagClass: 'tag-aviso', label: 'Aviso' };
+    }
+    return { borderColor: 'border-blue', iconBg: 'icon-bg-blue', icon: 'fa-info-circle', tagClass: 'tag-informativo', label: 'Informativo' };
+}
+
+function formatarData(dateStr) {
+    if (!dateStr) return '';
+    if (typeof dateStr === 'string') {
+        if (!dateStr.includes('T') && dateStr.includes(' ')) dateStr = dateStr.replace(' ', 'T');
+        if (!dateStr.includes('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) dateStr += 'Z';
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+}
+
+function carregarComunicados() {
+    fetch('/api/comunicados')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.comunicados) {
+                todosComunicados = data.comunicados;
+                
+                document.getElementById('statTotal').textContent = todosComunicados.length;
+                const qtdFixados = todosComunicados.filter(c => c.fixado).length;
+                document.getElementById('statFixados').textContent = qtdFixados;
+                
+                const naoLidos = todosComunicados.filter(c => !(c.lido_por || '').includes(currentUser));
+                document.getElementById('statNaoLidos').textContent = naoLidos.length;
+                document.getElementById('badgeNaoLidos').textContent = naoLidos.length;
+
+                const arquivados = todosComunicados.filter(c => (c.arquivado_por || '').includes(currentUser));
+                document.getElementById('statArquivados').textContent = arquivados.length;
+                
+                // Atualiza o badge global da sidebar se a função existir no base.html
+                if (typeof updateUnreadCount === 'function') {
+                    updateUnreadCount();
+                }
+            }
+            renderComunicados();
+        })
+        .catch(err => console.error(err));
+}
+
+function aplicarFiltros() {
+    const tipoFiltro = document.getElementById('filterTipo').value;
+    const visFiltro = document.getElementById('filterVis').value;
+    
+    let lista = [...todosComunicados];
+    
+    if (tipoFiltro !== 'all') {
+        lista = lista.filter(c => (c.tipo || '').toLowerCase().includes(tipoFiltro.toLowerCase()));
+    }
+    
+    if (visFiltro === 'arquivados') {
+        lista = lista.filter(c => (c.arquivado_por || '').includes(currentUser));
+    } else if (visFiltro === 'fixados') {
+        lista = lista.filter(c => c.fixado === 1 && !(c.arquivado_por || '').includes(currentUser));
+    } else if (visFiltro === 'nao_lidos') {
+        lista = lista.filter(c => !(c.lido_por || '').includes(currentUser) && !(c.arquivado_por || '').includes(currentUser));
+    } else {
+        lista = lista.filter(c => !(c.arquivado_por || '').includes(currentUser));
+    }
+    
+    return lista;
+}
+
+function renderComunicados() {
+    const columns = {
+        prioritario: document.getElementById('cardsPrioritario'),
+        geral: document.getElementById('cardsGeral')
+    };
+    
+    Object.values(columns).forEach(col => { if(col) col.innerHTML = ''; });
+    
+    const counters = { prioritario: 0, geral: 0 };
+    const listaFiltrada = aplicarFiltros();
+    
+    // Total para paginação
+    const totalItens = listaFiltrada.length;
+    const totalPaginas = Math.ceil(totalItens / itensPorPagina);
+    
+    // Proteção de página
+    if (paginaAtual > totalPaginas && totalPaginas > 0) paginaAtual = totalPaginas;
+    if (paginaAtual < 1) paginaAtual = 1;
+
+    // Slice para a página atual
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const fim = inicio + itensPorPagina;
+    const listaPaginada = listaFiltrada.slice(inicio, fim);
+    
+    listaPaginada.forEach(c => {
+        const estilo = getEstiloTipo(c.tipo);
+        const isFixado = c.fixado === 1;
+        const foiLido = (c.lido_por || '').includes(currentUser);
+        
+        let colKey = 'geral';
+        const tipoLower = (c.tipo || '').toLowerCase();
+        if (tipoLower.includes('urgente') || tipoLower.includes('aviso') || tipoLower.includes('meta') || tipoLower.includes('parabeniza') || isFixado) {
+            colKey = 'prioritario';
+        }
+
+        counters[colKey]++;
+        
+        const card = document.createElement('div');
+        card.className = `kanban-card ${isFixado ? 'fixed-card' : ''}`;
+        card.style.animation = 'fadeIn 0.4s ease forwards';
+        card.style.cursor = 'pointer';
+        card.onclick = (e) => {
+            if (!e.target.closest('button')) abrirViewCom(c.id);
+        };
+        
+        const badgeNovo = foiLido ? '' : '<div class="card-unread-dot"></div>';
+        
+        let acoesAdmin = '';
+        if (isAdmin) {
+            acoesAdmin = `
+                <button class="btn-card-action" title="Editar" onclick="abrirEdicao(${c.id})"><i class="fas fa-pen"></i></button>
+                <button class="btn-card-action danger" title="Excluir" onclick="excluir(${c.id})"><i class="fas fa-trash-alt"></i></button>
+            `;
+        }
+
+        const isArquivado = (c.arquivado_por || '').includes(currentUser);
+        const btnArquivo = isArquivado 
+            ? `<button class="btn-card-lido" onclick="desarquivar(${c.id})" style="background:#f1f5f9; color:#475569; border-color:#e2e8f0;"><i class="fas fa-box-open"></i> Desarquivar</button>`
+            : `<button class="btn-card-lido" onclick="arquivar(${c.id})" style="background:#fff7ed; color:#c2410c; border-color:#ffedd5;"><i class="fas fa-archive"></i> Arquivar</button>`;
+
+        card.innerHTML = `
+            ${badgeNovo}
+            <div class="card-top">
+                <span class="card-tag ${estilo.tagClass}">${estilo.label}</span>
+                <div class="card-actions">
+                    <button class="btn-card-action" title="${isFixado ? 'Desfixar' : 'Fixar'}" onclick="alternarFixar(${c.id})">
+                        <i class="fas fa-thumbtack ${isFixado ? 'icon-orange' : ''}"></i>
+                    </button>
+                    ${acoesAdmin}
+                </div>
+            </div>
+            <h4 class="card-title">${isFixado ? '<i class="fas fa-thumbtack" style="font-size:0.7rem; color:#f59e0b;"></i> ' : ''}${c.titulo}</h4>
+            <p class="card-desc">${c.mensagem}</p>
+            <div class="card-footer" style="display:flex; align-items:center; justify-content:space-between; padding-top:12px; border-top:1px solid var(--border-color); font-size:0.75rem; color:#94a3b8; gap:8px;">
+                <div class="card-user" style="display:flex; align-items:center; gap:6px; font-weight:600;"><div class="user-dot" style="width:6px; height:6px; border-radius:50%; background:#10b981;"></div> ${(c.autor || '').split('@')[0]}</div>
+                <div style="display:flex; gap:8px;">
+                    ${btnArquivo}
+                    <button class="btn-card-lido ${foiLido ? 'is-read' : ''}" onclick="${foiLido ? '' : `marcarLido(this, ${c.id})`}">
+                        <i class="fas ${foiLido ? 'fa-check-circle' : 'fa-check'}"></i> ${foiLido ? 'Lido' : 'Marcar Lido'}
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        if(columns[colKey]) columns[colKey].appendChild(card);
+    });
+
+    // Atualizar contadores (da lista completa filtrada para manter o contexto)
+    const contagemTotal = { prioritario: 0, geral: 0 };
+    listaFiltrada.forEach(c => {
+        const isFixado = c.fixado === 1;
+        const tipoLower = (c.tipo || '').toLowerCase();
+        if (tipoLower.includes('urgente') || tipoLower.includes('aviso') || tipoLower.includes('meta') || tipoLower.includes('parabeniza') || isFixado) {
+            contagemTotal.prioritario++;
+        } else {
+            contagemTotal.geral++;
+        }
+    });
+
+    if(document.getElementById('countPrioritario')) document.getElementById('countPrioritario').textContent = contagemTotal.prioritario;
+    if(document.getElementById('countGeral')) document.getElementById('countGeral').textContent = contagemTotal.geral;
+
+    renderPagination(totalPaginas);
+}
+
+function renderPagination(totalPaginas) {
+    const container = document.getElementById('pagination');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (totalPaginas <= 1) return;
+
+    // Botão Anterior
+    const btnPrev = document.createElement('button');
+    btnPrev.className = 'btn-page';
+    btnPrev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    btnPrev.disabled = paginaAtual === 1;
+    btnPrev.onclick = () => { paginaAtual--; renderComunicados(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+    container.appendChild(btnPrev);
+
+    // Números das páginas
+    for (let i = 1; i <= totalPaginas; i++) {
+        if (totalPaginas > 5) {
+            if (i !== 1 && i !== totalPaginas && (i < paginaAtual - 1 || i > paginaAtual + 1)) {
+                if (i === paginaAtual - 2 || i === paginaAtual + 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'page-info';
+                    dots.textContent = '...';
+                    container.appendChild(dots);
+                }
+                continue;
+            }
+        }
+        
+        const btn = document.createElement('button');
+        btn.className = `btn-page ${i === paginaAtual ? 'active' : ''}`;
+        btn.textContent = i;
+        btn.onclick = () => { paginaAtual = i; renderComunicados(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+        container.appendChild(btn);
+    }
+
+    // Botão Próximo
+    const btnNext = document.createElement('button');
+    btnNext.className = 'btn-page';
+    btnNext.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    btnNext.disabled = paginaAtual === totalPaginas;
+    btnNext.onclick = () => { paginaAtual++; renderComunicados(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+    container.appendChild(btnNext);
+}
+
+function abrirEdicao(id) {
+    const c = todosComunicados.find(x => x.id === id);
+    if(!c) return;
+    document.getElementById('editId').value = c.id;
+    document.getElementById('editTitulo').value = c.titulo;
+    const selectTipo = document.getElementById('editTipo');
+    const valorTipo = (c.tipo || 'informativo').toLowerCase();
+    for (let i = 0; i < selectTipo.options.length; i++) {
+        if (valorTipo.includes(selectTipo.options[i].value)) {
+            selectTipo.selectedIndex = i;
+            break;
+        }
+    }
+    document.getElementById('editMensagem').value = c.mensagem;
+    document.getElementById('editFixado').checked = c.fixado === 1;
+    document.getElementById('modalEdicao').classList.add('open');
+}
+
+function fecharModal() {
+    document.getElementById('modalEdicao').classList.remove('open');
+}
+
+function salvarEdicao() {
+    const id = document.getElementById('editId').value;
+    const titulo = document.getElementById('editTitulo').value.trim();
+    const tipo = document.getElementById('editTipo').value;
+    const mensagem = document.getElementById('editMensagem').value.trim();
+    const fixado = document.getElementById('editFixado').checked;
+    if(!titulo || !tipo || !mensagem) return alert('Preencha tudo.');
+    fetch('/api/comunicados/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, tipo, mensagem, fixado })
+    }).then(r=>r.json()).then(d=>{
+        if(d.success) { fecharModal(); carregarComunicados(); }
+        else alert(d.message);
+    });
+}
+
+function excluir(id) {
+    if(!confirm('Certeza que deseja excluir este comunicado?')) return;
+    fetch('/api/comunicados/' + id, { method: 'DELETE' })
+    .then(r => r.json()).then(d => {
+        if(d.success) carregarComunicados();
+        else alert(d.message || 'Erro ao excluir.');
+    }).catch(() => alert('Erro de conexão.'));
+}
+
+function alternarFixar(id) {
+    fetch('/api/comunicados/' + id + '/fixar', { method: 'PUT' })
+    .then(r=>r.json()).then(d=>{
+        if(d.success) carregarComunicados();
+    });
+}
+
+function arquivar(id) {
+    fetch('/api/comunicados/' + id + '/arquivar', { method: 'PUT' })
+    .then(r => r.json()).then(d => {
+        if(d.success) carregarComunicados();
+    });
+}
+
+function desarquivar(id) {
+    fetch('/api/comunicados/' + id + '/desarquivar', { method: 'PUT' })
+    .then(r => r.json()).then(d => {
+        if(d.success) carregarComunicados();
+    });
+}
+
+function marcarTodosLidos() {
+    const btn = document.querySelector('.btn-premium-solid[onclick="marcarTodosLidos()"]');
+    if(btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+    }
+    
+    fetch('/api/comunicados/marcar_lidos', { method: 'POST' })
+    .then(r=>r.json()).then(d=>{
+        if(d.success) {
+            carregarComunicados();
+            if(typeof mostrarNotificacao === 'function') mostrarNotificacao('Todos os comunicados marcados como lidos!', 'success');
+        }
+    }).finally(() => {
+        if(btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="far fa-check-circle"></i> Marcar Tudo como Lido';
+        }
+    });
+}
+
+function marcarLido(btn, id) {
+    if(!btn) return;
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    fetch(`/api/comunicados/${id}/lido`, { method: 'POST' })
+    .then(r => r.json()).then(d => {
+        if(d.success) {
+            carregarComunicados();
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    }).catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    });
+}
+
+function toggleFiltros() {
+    const bar = document.getElementById('filtrosBar');
+    const btn = document.querySelector('.btn-premium-outline[onclick="toggleFiltros()"]');
+    if(!bar || !btn) return;
+    if (bar.style.display === 'none' || bar.style.display === '') {
+        bar.style.display = 'flex';
+        btn.style.background = '#f0fdf4';
+    } else {
+        bar.style.display = 'none';
+        btn.style.background = '';
+    }
+}
+
+function setFiltroVis(valor) {
+    document.getElementById('filterVis').value = valor;
+    const bar = document.getElementById('filtrosBar');
+    if (bar && (bar.style.display === 'none' || bar.style.display === '')) {
+        toggleFiltros();
+    }
+    renderComunicados();
+}
+
+function formatarDataBR(dataStr) {
+    if(!dataStr) return '';
+    try {
+        let ds = dataStr;
+        if (typeof ds === 'string') {
+            if (!ds.includes('T') && ds.includes(' ')) ds = ds.replace(' ', 'T');
+            if (!ds.includes('Z') && !/[+-]\d{2}:?\d{2}$/.test(ds)) ds += 'Z';
+        }
+        const d = new Date(ds);
+        if(isNaN(d)) return dataStr;
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const ano = d.getFullYear();
+        const hora = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${dia}/${mes}/${ano} às ${hora}:${min}`;
+    } catch(e) { return dataStr; }
+}
+
+function abrirViewCom(id) {
+    const com = todosComunicados.find(c => c.id === id);
+    if (!com) return;
+
+    const estilo = getEstiloTipo(com.tipo);
+    const tagEl = document.getElementById('viewComTag');
+    tagEl.textContent = estilo.label;
+    tagEl.className = `card-tag ${estilo.tagClass}`;
+    
+    const dataFormatada = formatarDataBR(com.criado_em);
+    document.getElementById('viewComMeta').innerHTML = `<i class="far fa-user"></i> Por: ${com.autor.split('@')[0]} <span style="margin: 0 10px; opacity: 0.3;">|</span> <i class="far fa-clock"></i> ${dataFormatada}`;
+    document.getElementById('viewComTitle').textContent = com.titulo;
+    document.getElementById('viewComBody').textContent = com.mensagem;
+    
+    // Injetar botões de ação no footer do modal
+    const foiLido = (com.lido_por || '').includes(currentUser);
+    const isArquivado = (com.arquivado_por || '').includes(currentUser);
+    
+    const btnLido = foiLido 
+        ? `<button class="btn-card-lido is-read" disabled><i class="fas fa-check-circle"></i> Já Lido</button>`
+        : `<button class="btn-card-lido" onclick="marcarLido(null, ${com.id}); fecharViewCom();"><i class="fas fa-check"></i> Marcar como Lido</button>`;
+        
+    const btnArq = isArquivado
+        ? `<button class="btn-premium-outline" onclick="desarquivar(${com.id}); fecharViewCom();" style="border-color:#e2e8f0;"><i class="fas fa-box-open"></i> Desarquivar</button>`
+        : `<button class="btn-premium-outline" onclick="arquivar(${com.id}); fecharViewCom();" style="border-color:#ffedd5; color:#c2410c;"><i class="fas fa-archive"></i> Arquivar</button>`;
+
+    document.getElementById('viewComActions').innerHTML = `
+        <button class="btn-premium-outline" onclick="fecharViewCom()" style="border-color:#e2e8f0; color:#64748b;">Fechar Janela</button>
+        ${btnArq}
+        ${btnLido}
+    `;
+    
+    document.getElementById('modalViewCom').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function fecharViewCom() {
+    const modal = document.getElementById('modalViewCom');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,692 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Scripts - Consig Tech{% endblock %}
+{% block page_title %}Gerenciar Scripts{% endblock %}
+
+{% block header_actions %}
+<div style="display: flex; gap: 12px; align-items: center;">
+    <button class="btn-premium-solid" onclick="abrirModalScript()" style="padding: 8px 18px; font-size: 0.85rem; background: #fff; color: #1e293b; border: 1px solid #22c55e; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+        <i class="fas fa-plus"></i> Novo Script
+    </button>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── Kanban Admin Scripts (Ref: comunicados.html) ── */
+.scripts-wrapper {
+    padding: 20px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.kanban-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    min-height: 500px;
+}
+@media (max-width: 900px) {
+    .kanban-board { grid-template-columns: 1fr; }
+}
+
+.kanban-column {
+    background: rgba(248, 250, 252, 0.5);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+}
+.theme-dark .kanban-column {
+    background: rgba(30, 41, 59, 0.3);
+    border-color: #334155;
+}
+
+.column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px 10px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: 5px;
+}
+.column-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.column-count {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.theme-dark .column-count { background: #334155; color: #94a3b8; }
+
+.col-1-header .column-header { border-bottom-color: #10b981; }
+.col-1-header .column-title i { color: #10b981; }
+.col-2-header .column-header { border-bottom-color: #3b82f6; }
+.col-2-header .column-title i { color: #3b82f6; }
+
+.column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.kanban-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    cursor: default;
+}
+.kanban-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+}
+.kanban-card.fixed-card {
+    border: 2px solid #fbbf24;
+    background: #fffdf5;
+}
+.theme-dark .kanban-card.fixed-card {
+    border-color: #d97706;
+    background: rgba(217, 119, 6, 0.05);
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.card-actions-top {
+    display: flex;
+    gap: 8px;
+}
+.btn-card-action {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+}
+.btn-card-action:hover { color: var(--primary); }
+.btn-card-action.danger:hover { color: #ef4444; }
+
+.card-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+    background: #f1f5f9;
+    color: #64748b;
+}
+.theme-dark .card-tag { background: #0f172a; color: #94a3b8; }
+
+.card-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    line-height: 1.3;
+}
+
+.card-desc {
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: pre-wrap;
+}
+.theme-dark .card-desc { color: #94a3b8; }
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.author-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+.author-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+.btn-status-pill {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #dcfce7;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s ease;
+}
+.theme-dark .btn-status-pill { background: rgba(22, 163, 74, 0.1); border-color: rgba(22, 163, 74, 0.2); }
+.btn-status-pill.draft { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; }
+.theme-dark .btn-status-pill.draft { background: #0f172a; border-color: #334155; }
+
+/* ── Paginação ── */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 30px;
+    padding: 20px;
+}
+.btn-page {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #475569;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.theme-dark .btn-page { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+.btn-page:hover { border-color: #22c55e; color: #22c55e; transform: translateY(-2px); }
+.btn-page.active { background: #22c55e; color: #fff; border-color: #22c55e; box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2); }
+.btn-page:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Modal */
+.modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+    align-items: center; justify-content: center; backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal-content-pro {
+    background: var(--bg-panel); border-radius: 20px; padding: 25px; width: 100%; max-width: 550px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+    animation: slideUp 0.3s ease;
+}
+.form-group { margin-bottom: 15px; }
+.form-label { display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 6px; }
+.theme-dark .form-label { color: #94a3b8; }
+.form-input {
+    width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 10px;
+    font-size: 0.95rem; color: var(--text-main); background: var(--bg-panel); outline: none; transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--primary); }
+
+/* Modal de Visualização Expandida */
+.modal-view-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeOverlay 0.3s ease;
+}
+.modal-view-content {
+    background: var(--bg-panel);
+    width: 100%;
+    max-width: 800px;
+    max-height: 90vh;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.modal-view-header {
+    padding: 24px 30px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-panel);
+}
+.modal-view-body {
+    padding: 30px;
+    overflow-y: auto;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-main);
+    white-space: pre-wrap;
+}
+.modal-view-footer {
+    padding: 20px 30px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: rgba(248, 250, 252, 0.05);
+}
+.btn-close-view {
+    background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-close-view:hover { color: #ef4444; transform: rotate(90deg); }
+
+@keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scripts-wrapper">
+    <div class="kanban-board">
+        <!-- Coluna 1: Negociação & Golpes -->
+        <div class="kanban-column col-1-header">
+            <div class="column-header">
+                <div class="column-title"><i class="fas fa-handshake"></i> Negociação & Golpes</div>
+                <div class="column-count" id="countCol1">0</div>
+            </div>
+            <div class="column-cards" id="cardsCol1"></div>
+        </div>
+
+        <!-- Coluna 2: Amortização & Outros -->
+        <div class="kanban-column col-2-header">
+            <div class="column-header">
+                <div class="column-title"><i class="fas fa-chart-line"></i> Amortização & Outros</div>
+                <div class="column-count" id="countCol2">0</div>
+            </div>
+            <div class="column-cards" id="cardsCol2"></div>
+        </div>
+    </div>
+
+    <!-- Paginação -->
+    <div id="pagination" class="pagination-container"></div>
+</div>
+
+<!-- Modal Script -->
+<div class="modal-overlay" id="modalScript">
+    <div class="modal-content-pro">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="margin:0; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;" id="modalTitle">Novo Script</h3>
+            <button onclick="fecharModalScript()" style="background:none; border:none; cursor:pointer; color:#94a3b8;"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <input type="hidden" id="scriptId">
+        
+        <div class="form-group">
+            <label class="form-label">Título</label>
+            <input type="text" id="scriptTitulo" class="form-input" placeholder="Título do script...">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Categoria</label>
+            <select id="scriptCategoria" class="form-input">
+                <option value="Negociação">💼 Negociação</option>
+                <option value="Golpes">⚠️ Golpes</option>
+                <option value="Amortização">📊 Amortização</option>
+                <option value="Outros">📁 Outros</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Conteúdo</label>
+            <textarea id="scriptConteudo" class="form-input" rows="8" placeholder="Digite o conteúdo aqui..."></textarea>
+        </div>
+        
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px;">
+            <button onclick="fecharModalScript()" style="padding:10px 20px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; font-weight:600; cursor:pointer;">Cancelar</button>
+            <button onclick="salvarScript()" style="padding:10px 25px; border-radius:10px; border:none; background:#22c55e; color:#fff; font-weight:700; cursor:pointer;">Salvar Script</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação Customizado -->
+<div class="modal-overlay" id="modalConfirm">
+    <div class="modal-content-pro" style="max-width: 400px; text-align: center;">
+        <div style="margin-bottom: 20px;">
+            <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: #fbbf24;"></i>
+        </div>
+        <h3 id="confirmTitle" style="margin-bottom: 10px; font-weight: 800;">Confirmar Ação</h3>
+        <p id="confirmText" style="color: #64748b; font-size: 0.9rem; margin-bottom: 25px;">Deseja realmente prosseguir?</p>
+        
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="fecharConfirm()" style="padding: 10px 20px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; font-weight: 600; cursor: pointer; color: #64748b; flex: 1;">Cancelar</button>
+            <button id="btnConfirmOk" style="padding: 10px 20px; border-radius: 10px; border: none; background: #ef4444; color: #fff; font-weight: 700; cursor: pointer; flex: 1;">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Visualização Expandida Premium -->
+<div class="modal-view-overlay" id="modalViewScript" onclick="fecharViewScript(event)">
+    <div class="modal-view-content" onclick="event.stopPropagation()">
+        <div class="modal-view-header">
+            <div class="modal-header-meta">
+                <span class="card-tag" id="viewScriptTag" style="margin:0;">CATEGORIA</span>
+                <span style="color:#94a3b8; font-size:0.8rem;"><i class="far fa-user"></i> Admin View</span>
+            </div>
+            <h2 id="viewScriptTitle" class="modal-view-title">Título do Script</h2>
+            <button class="btn-close-view" onclick="fecharViewScript()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-view-body" id="viewScriptBody">
+            Conteúdo aqui...
+        </div>
+        <div class="modal-view-footer">
+            <div style="display:flex; align-items:center; gap:10px; color:#94a3b8; font-size:0.85rem;">
+                <i class="fas fa-lock"></i> Visualização de Administrador.
+            </div>
+            <div style="display:flex; gap:12px;">
+                <button class="btn-premium-outline" onclick="fecharViewScript()" style="border-color:#e2e8f0; color:#64748b;">Fechar Janela</button>
+                <button class="btn-premium-solid" id="btnEditFromView" style="background:var(--primary); color:#fff; border:none;">
+                    <i class="fas fa-pen"></i> Editar este Script
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let scriptsData = [];
+let paginaAtual = 1;
+const itensPorPagina = 6;
+
+document.addEventListener('DOMContentLoaded', () => {
+    carregarScripts();
+});
+
+function carregarScripts() {
+    fetch('/api/scripts')
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            scriptsData = data.scripts;
+            renderizarScripts();
+        }
+    });
+}
+
+function renderizarScripts() {
+    const col1 = document.getElementById('cardsCol1');
+    const col2 = document.getElementById('cardsCol2');
+    
+    col1.innerHTML = '';
+    col2.innerHTML = '';
+    
+    const filtrados = scriptsData; // Sem filtro de busca
+
+    const totalPaginas = Math.ceil(filtrados.length / itensPorPagina);
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const fim = inicio + itensPorPagina;
+    const scriptsPagina = filtrados.slice(inicio, fim);
+
+    scriptsPagina.forEach(s => {
+        const cat = (s.categoria || '').toLowerCase();
+        const card = document.createElement('div');
+        card.className = `kanban-card ${s.fixado ? 'fixed-card' : ''}`;
+        card.style.animation = 'fadeIn 0.4s ease forwards';
+        card.style.cursor = 'pointer';
+        card.onclick = (e) => {
+            if (!e.target.closest('button')) abrirViewScript(s.id);
+        };
+        
+        card.innerHTML = `
+            <div class="card-top">
+                <span class="card-tag">${s.categoria}</span>
+                <div class="card-actions-top">
+                    <button class="btn-card-action ${s.fixado ? 'fixed' : ''}" title="${s.fixado ? 'Desafixar' : 'Fixar no Topo'}" onclick="toggleFixar(${s.id})" style="${s.fixado ? 'color: #fbbf24;' : ''}">
+                        <i class="fas fa-thumbtack" style="${s.fixado ? 'transform: rotate(0deg);' : 'transform: rotate(45deg);'}"></i>
+                    </button>
+                    <button class="btn-card-action" title="Editar" onclick="editarScript(${s.id})"><i class="fas fa-pen"></i></button>
+                    <button class="btn-card-action danger" title="Excluir" onclick="deletarScript(${s.id})"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+            <h4 class="card-title">${s.titulo}</h4>
+            <div class="card-desc">${s.conteudo}</div>
+            <div class="card-footer">
+                <div class="author-info">
+                    <div class="author-dot"></div>
+                    Admin
+                </div>
+                <button class="btn-status-pill ${s.publicado ? '' : 'draft'}" onclick="togglePublicacao(${s.id})">
+                    <i class="fas ${s.publicado ? 'fa-check-circle' : 'fa-eye-slash'}"></i> 
+                    ${s.publicado ? 'Publicado' : 'Rascunho'}
+                </button>
+            </div>
+        `;
+        
+        if (cat.includes('negocia') || cat.includes('golpe')) {
+            col1.appendChild(card);
+        } else {
+            col2.appendChild(card);
+        }
+    });
+    
+    const totalC1 = filtrados.filter(s => (s.categoria||'').toLowerCase().includes('negocia') || (s.categoria||'').toLowerCase().includes('golpe')).length;
+    const totalC2 = filtrados.length - totalC1;
+    
+    document.getElementById('countCol1').textContent = totalC1;
+    document.getElementById('countCol2').textContent = totalC2;
+
+    renderizarPaginacao(totalPaginas);
+}
+
+function renderizarPaginacao(totalPaginas) {
+    const container = document.getElementById('pagination');
+    container.innerHTML = '';
+    if (totalPaginas <= 1) return;
+
+    const btnPrev = document.createElement('button');
+    btnPrev.className = 'btn-page';
+    btnPrev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    btnPrev.disabled = paginaAtual === 1;
+    btnPrev.onclick = () => { paginaAtual--; renderizarScripts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+    container.appendChild(btnPrev);
+
+    for (let i = 1; i <= totalPaginas; i++) {
+        if (totalPaginas > 5) {
+            if (i !== 1 && i !== totalPaginas && (i < paginaAtual - 1 || i > paginaAtual + 1)) {
+                if (i === paginaAtual - 2 || i === paginaAtual + 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'page-info';
+                    dots.textContent = '...';
+                    container.appendChild(dots);
+                }
+                continue;
+            }
+        }
+        const btn = document.createElement('button');
+        btn.className = `btn-page ${i === paginaAtual ? 'active' : ''}`;
+        btn.textContent = i;
+        btn.onclick = () => { paginaAtual = i; renderizarScripts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+        container.appendChild(btn);
+    }
+
+    const btnNext = document.createElement('button');
+    btnNext.className = 'btn-page';
+    btnNext.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    btnNext.disabled = paginaAtual === totalPaginas;
+    btnNext.onclick = () => { paginaAtual++; renderizarScripts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+    container.appendChild(btnNext);
+}
+
+function abrirModalScript(id = null) {
+    if (id) {
+        const s = scriptsData.find(x => x.id === id);
+        document.getElementById('scriptId').value = s.id;
+        document.getElementById('scriptTitulo').value = s.titulo;
+        document.getElementById('scriptCategoria').value = s.categoria;
+        document.getElementById('scriptConteudo').value = s.conteudo;
+        document.getElementById('modalTitle').textContent = 'Editar Script';
+    } else {
+        document.getElementById('scriptId').value = '';
+        document.getElementById('scriptTitulo').value = '';
+        document.getElementById('scriptCategoria').value = 'Negociação';
+        document.getElementById('scriptConteudo').value = '';
+        document.getElementById('modalTitle').textContent = 'Novo Script';
+    }
+    document.getElementById('modalScript').classList.add('open');
+}
+
+function fecharModalScript() {
+    document.getElementById('modalScript').classList.remove('open');
+}
+
+function salvarScript() {
+    const id = document.getElementById('scriptId').value;
+    const titulo = document.getElementById('scriptTitulo').value.trim();
+    const categoria = document.getElementById('scriptCategoria').value;
+    const conteudo = document.getElementById('scriptConteudo').value.trim();
+    
+    if (!titulo || !conteudo) return alert('Preencha título e conteúdo.');
+    
+    const metodo = id ? 'PUT' : 'POST';
+    const url = id ? `/api/scripts/${id}` : '/api/scripts';
+    
+    fetch(url, {
+        method: metodo,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, categoria, conteudo })
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            fecharModalScript();
+            carregarScripts();
+        }
+    });
+}
+
+function togglePublicacao(id) {
+    const script = scriptsData.find(s => s.id === id);
+    if (!script) return;
+
+    const acao = script.publicado ? 'Despublicar' : 'Publicar';
+    const msg = script.publicado 
+        ? 'Este script deixará de ser visível para os vendedores. Deseja continuar?' 
+        : 'Este script ficará visível para todos os vendedores. Deseja continuar?';
+
+    abrirConfirm(
+        acao + ' Script', 
+        msg,
+        () => {
+            fetch(`/api/scripts/${id}/toggle`, { method: 'POST' })
+            .then(r => r.json()).then(data => {
+                if (data.success) carregarScripts();
+            });
+        }
+    );
+}
+
+function toggleFixar(id) {
+    fetch(`/api/scripts/${id}/fixar`, { method: 'POST' })
+    .then(r => r.json()).then(data => {
+        if (data.success) carregarScripts();
+    });
+}
+
+function abrirViewScript(id) {
+    const script = scriptsData.find(s => s.id === id);
+    if (!script) return;
+
+    const tagEl = document.getElementById('viewScriptTag');
+    tagEl.textContent = script.categoria;
+    
+    // Ajusta cor da tag no modal
+    const cat = (script.categoria || '').toLowerCase();
+    let tagClass = 'tag-outros';
+    if(cat.includes('negocia')) tagClass = 'tag-negociacao';
+    else if(cat.includes('golpe')) tagClass = 'tag-golpes';
+    else if(cat.includes('amortiza')) tagClass = 'tag-amortizacao';
+    tagEl.className = `card-tag ${tagClass}`;
+
+    document.getElementById('viewScriptTitle').textContent = script.titulo;
+    document.getElementById('viewScriptBody').textContent = script.conteudo;
+    
+    // Configura botão de editar dentro do view
+    const btnEdit = document.getElementById('btnEditFromView');
+    btnEdit.onclick = () => {
+        fecharViewScript();
+        editarScript(script.id);
+    };
+    
+    document.getElementById('modalViewScript').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function fecharViewScript() {
+    const modal = document.getElementById('modalViewScript');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function editarScript(id) {
+    abrirModalScript(id);
+}
+
+function deletarScript(id) {
+    abrirConfirm(
+        'Excluir Script',
+        'Tem certeza que deseja excluir este script permanentemente? Esta ação não pode ser desfeita.',
+        () => {
+            fetch(`/api/scripts/${id}`, { method: 'DELETE' })
+            .then(r => r.json()).then(data => {
+                if (data.success) carregarScripts();
+            });
+        }
+    );
+}
+
+// Lógica do Modal de Confirmação
+let confirmCallback = null;
+function abrirConfirm(titulo, texto, callback) {
+    document.getElementById('confirmTitle').textContent = titulo;
+    document.getElementById('confirmText').textContent = texto;
+    confirmCallback = callback;
+    document.getElementById('modalConfirm').classList.add('open');
+    
+    document.getElementById('btnConfirmOk').onclick = () => {
+        if (confirmCallback) confirmCallback();
+        fecharConfirm();
+    };
+}
+
+function fecharConfirm() {
+    document.getElementById('modalConfirm').classList.remove('open');
+    confirmCallback = null;
+}
+</script>
+{% endblock %}

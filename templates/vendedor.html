@@ -1,0 +1,968 @@
+{% extends "base.html" %}
+
+{% block title %}Tela do Vendedor - Consig Tech{% endblock %}
+
+{% block page_title %}Tela do Vendedor - Bora vender, {{ user.split('@')[0].split('.')[0].split(' ')[0]|capitalize }}! 🚀{% endblock %}
+
+{% block header_actions %}
+<button class="btn-primary" id="btnProximoLeadTop" onclick="buscarProximoCliente()" style="background:#10b981; color:#fff; padding: 10px 20px; border:none; border-radius: 8px; font-weight:600; cursor:pointer;">
+    <i class="fas fa-forward"></i> Próximo Lead
+</button>
+{% endblock %}
+
+{% block head %}
+<style>
+/* Dashboard Stats */
+.vendedor-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+.stat-card-vend {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.stat-card-vend .stat-info { display: flex; flex-direction: column; }
+.stat-card-vend .stat-label { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+.stat-card-vend .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text-main); margin-top: 5px; }
+.stat-card-vend .stat-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 5px; }
+.stat-card-vend .stat-icon {
+    width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+}
+
+/* Cliente Info Box */
+.cliente-container {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+.cliente-header {
+    background: var(--primary-light);
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+.cliente-header-info { display: flex; align-items: center; gap: 15px; }
+.cliente-avatar {
+    width: 50px; height: 50px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--primary); font-size: 1.5rem; font-weight: bold; border: 2px solid var(--primary);
+}
+.cliente-title { display: flex; flex-direction: column; }
+.cliente-title h3 { margin: 0; font-size: 1.3rem; color: var(--text-main); font-weight: 700; }
+.cliente-title span { font-size: 0.85rem; color: #64748b; margin-top: 2px; }
+
+.cliente-body {
+    padding: 25px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+.info-section h4 {
+    margin: 0 0 15px 0; font-size: 0.95rem; color: var(--primary); font-weight: 700; border-bottom: 2px solid var(--primary-light); padding-bottom: 5px;
+}
+.info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+}
+.info-item { display: flex; flex-direction: column; }
+.info-item label { font-size: 0.75rem; color: #64748b; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; }
+.info-item span { font-size: 0.95rem; color: var(--text-main); font-weight: 500; }
+.info-item .copy-btn { margin-left: 5px; color: #94a3b8; cursor: pointer; transition: color 0.2s; }
+.info-item .copy-btn:hover { color: var(--primary); }
+
+.info-destaque {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+body.theme-dark .info-destaque { background: #0f172a; border-color: #334155; }
+.info-destaque label { font-size: 0.8rem; color: #64748b; font-weight: 700; margin-bottom: 5px; }
+.info-destaque span { font-size: 1.4rem; color: #10b981; font-weight: 800; }
+
+/* Tabulações */
+.tabulacao-container {
+    background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 25px;
+}
+.tabulacao-header {
+    background: #f8fafc; padding: 15px 25px; border-bottom: 1px solid var(--border-color); display: flex; gap: 20px;
+}
+body.theme-dark .tabulacao-header { background: #0f172a; }
+
+.tab-btn {
+    background: none; border: none; font-size: 0.9rem; font-weight: 600; color: #64748b; cursor: pointer; padding: 8px 15px; border-radius: 20px; transition: all 0.2s;
+}
+.tab-btn.active { background: var(--primary-light); color: var(--primary); }
+.tab-btn:hover:not(.active) { background: var(--sidebar-hover); }
+
+.tab-content { padding: 25px; display: none; }
+.tab-content.active { display: block; }
+
+.tab-form-group { margin-bottom: 15px; }
+.tab-form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px; }
+.tab-input, .tab-textarea {
+    width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; font-size: 0.9rem; background: var(--bg-main); color: var(--text-main); box-sizing: border-box; outline: none;
+}
+.tab-textarea { resize: vertical; min-height: 80px; }
+
+/* Botões de Ação */
+.acoes-container {
+    display: flex; justify-content: flex-end; gap: 15px; padding: 20px 25px; background: #f8fafc; border-top: 1px solid var(--border-color);
+}
+body.theme-dark .acoes-container { background: #0f172a; }
+
+.btn-acao {
+    padding: 12px 24px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s, transform 0.1s;
+}
+.btn-acao:hover { opacity: 0.9; }
+.btn-acao:active { transform: scale(0.98); }
+.btn-elegivel { background: #10b981; color: #fff; }
+.btn-nao-elegivel { background: #ef4444; color: #fff; }
+
+/* Histórico Table */
+.historico-container {
+    background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;
+}
+.historico-header {
+    padding: 20px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;
+}
+.historico-header h3 { margin: 0; font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+.historico-header h3 i { color: #8b5cf6; }
+
+.historico-table-wrap { overflow-x: auto; }
+.historico-table { width: 100%; border-collapse: collapse; text-align: left; }
+.historico-table th { padding: 15px 25px; font-size: 0.85rem; font-weight: 700; color: #10b981; background: var(--bg-main); border-bottom: 1px solid var(--border-color); }
+.historico-table td { padding: 15px 25px; font-size: 0.85rem; color: var(--text-main); border-bottom: 1px solid var(--border-color); }
+.historico-table tr:hover { background: var(--sidebar-hover); }
+
+.badge-banco { background: #eff6ff; color: #3b82f6; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 2px; }
+.badge-banco.bmg { background: #fef3c7; color: #d97706; }
+.badge-banco.facta { background: #ecfdf5; color: #059669; }
+
+.status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.status-badge.elegivel { background: #dcfce7; color: #16a34a; }
+.status-badge.nao-elegivel { background: #fee2e2; color: #dc2626; }
+
+/* Botões de Cópia Profissionais */
+.btn-copy-tiny {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.btn-copy-tiny:hover {
+    background: #f8fafc;
+    color: var(--primary);
+    border-color: var(--primary-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.btn-copy-tiny:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.btn-copy-tiny.copied-success {
+    background: #10b981 !important;
+    border-color: #10b981 !important;
+    color: #ffffff !important;
+    transform: scale(1.05);
+}
+.btn-copy-tiny i {
+    font-size: 0.8rem;
+}
+
+.cpf-copy-btn {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.contacts-copy-btn {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    color: #0369a1;
+}
+
+
+.btn-editar-hist { background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.btn-editar-hist:hover { text-decoration: underline; }
+
+/* Empty State Cliente */
+.empty-cliente {
+    background: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: 12px; padding: 60px 20px; text-align: center; margin-bottom: 25px;
+}
+.empty-cliente i { font-size: 4rem; color: #cbd5e1; margin-bottom: 15px; }
+.empty-cliente h3 { font-size: 1.2rem; color: var(--text-main); margin-bottom: 8px; }
+.empty-cliente p { color: #64748b; font-size: 0.95rem; margin-bottom: 20px; }
+
+/* Modais */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.7); z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+}
+.modal-overlay.hidden { display: none !important; }
+.modal-box {
+    background: var(--bg-panel); width: 100%; max-width: 500px;
+    border-radius: 12px; padding: 25px; position: relative;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+.modal-close {
+    position: absolute; top: 15px; right: 15px; background: none; border: none;
+    font-size: 1.2rem; color: #64748b; cursor: pointer;
+}
+.modal-title { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin: 0 0 5px 0; }
+.modal-subtitle { font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
+.btn-modal-cancel { background: #f1f5f9; color: #475569; padding: 10px 15px; border:none; border-radius: 8px; font-weight:600; cursor:pointer; }
+.btn-modal-import { background: #3b82f6; color: #fff; padding: 10px 15px; border:none; border-radius: 8px; font-weight:600; cursor:pointer; }
+
+/* Checkboxes Bancos */
+.checkbox-grid {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+}
+.checkbox-banco-label {
+    background: var(--bg-main); border: 1px solid var(--border-color);
+    padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+    transition: all 0.2s;
+}
+.checkbox-banco-label:hover { border-color: var(--primary); }
+.checkbox-banco-label input[type="checkbox"] {
+    width: 16px; height: 16px; cursor: pointer;
+}
+
+/* Utilities */
+.hidden { display: none !important; }
+
+/* Dropdown Multi-Select */
+.custom-dropdown { position: relative; width: 100%; user-select: none; }
+.dropdown-header {
+    background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px;
+    padding: 10px 14px; font-size: 0.9rem; color: var(--text-main); cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.dropdown-header:hover { border-color: var(--primary); }
+.dropdown-list {
+    position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-panel);
+    border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-height: 200px; overflow-y: auto; z-index: 100; margin-top: 5px; padding: 5px 0;
+}
+.dropdown-list label {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px; cursor: pointer;
+    font-size: 0.9rem; color: var(--text-main); font-weight: 500; transition: background 0.2s;
+    margin: 0;
+}
+.dropdown-list label:hover { background: var(--sidebar-hover); }
+.dropdown-list input[type="checkbox"] { cursor: pointer; width: 16px; height: 16px; margin:0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-content-inner" style="max-width: 1400px; margin: 0 auto;">
+
+    <!-- Meu Desempenho -->
+    <div class="vendedor-stats-grid">
+        <div class="stat-card-vend">
+            <div class="stat-info">
+                <span class="stat-label">Pendentes na Fila</span>
+                <span class="stat-value" id="statPendentes">0</span>
+                <span class="stat-sub">Leads aguardando tabulação</span>
+            </div>
+            <div class="stat-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-users"></i></div>
+        </div>
+        <div class="stat-card-vend">
+            <div class="stat-info">
+                <span class="stat-label">Leads Atendidos</span>
+                <span class="stat-value" id="statAtendidos">0</span>
+                <span class="stat-sub">Total de clientes finalizados</span>
+            </div>
+            <div class="stat-icon" style="background:#f3e8ff; color:#8b5cf6;"><i class="fas fa-headset"></i></div>
+        </div>
+        <div class="stat-card-vend">
+            <div class="stat-info">
+                <span class="stat-label">Taxa de Conversão</span>
+                <span class="stat-value" id="statConversao">0%</span>
+                <span class="stat-sub">Clientes elegíveis vs totais</span>
+            </div>
+            <div class="stat-icon" style="background:#fef3c7; color:#d97706;"><i class="fas fa-chart-pie"></i></div>
+        </div>
+        <div class="stat-card-vend">
+            <div class="stat-info">
+                <span class="stat-label">Valor Total (Margem)</span>
+                <span class="stat-value" id="statValorTotal" style="color:#10b981;">R$ 0,00</span>
+                <span class="stat-sub">Soma das margens elegíveis</span>
+            </div>
+            <div class="stat-icon" style="background:#ecfdf5; color:#10b981;"><i class="fas fa-sack-dollar"></i></div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyClienteBox" class="empty-cliente">
+        <i class="fas fa-box-open"></i>
+        <h3 id="emptyTitle">Nenhum cliente na tela</h3>
+        <p id="emptyDesc">Você não possui clientes pendentes no momento. Clique no botão abaixo para buscar o próximo lead atribuído a você.</p>
+        <button id="btnEmptyAcao" class="btn-acao btn-elegivel" style="margin:0 auto; padding: 10px 20px;" onclick="buscarProximoCliente()">
+            <i class="fas fa-search"></i> <span id="textBtnEmpty">Buscar Próximo Lead</span>
+        </button>
+    </div>
+
+    <!-- Área de Trabalho (Oculta por padrão) -->
+    <div id="workspaceCliente" class="hidden">
+        <input type="hidden" id="clienteIdAtual" value="">
+        
+        <!-- Info do Cliente -->
+        <div class="cliente-container">
+            <div class="cliente-header">
+                <div class="cliente-header-info">
+                    <div class="cliente-avatar" id="cliAvatar">C</div>
+                    <div class="cliente-title">
+                        <h3 id="cliNome">Carregando...</h3>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span><i class="fas fa-id-card"></i> <span id="cliCpf">...</span></span>
+                            <button class="btn-copy-tiny cpf-copy-btn" onclick="copiarTexto(document.getElementById('cliCpf').innerText, this)" title="Copiar CPF">
+                                <i class="fas fa-copy"></i> Copiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">STATUS:</span>
+                    <span style="background: #fef9c3; color: #a16207; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; margin-left: 5px;">Aguardando Tabulação</span>
+                </div>
+            </div>
+            <div class="cliente-body">
+                <div class="info-section">
+                    <h4><i class="fas fa-address-book"></i> Contatos</h4>
+                    <div class="info-grid">
+                        <div class="info-item" style="grid-column: span 2;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label style="margin-bottom: 0;">Telefones</label>
+                                <button class="btn-copy-tiny contacts-copy-btn" onclick="copiarTodosContatos(this)">
+                                    <i class="fas fa-copy"></i> Copiar Todos
+                                </button>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:4px; font-size:1.1rem; color:#1e293b; font-weight:600;" id="cliTelefones">
+                                <span>-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="info-section">
+                    <h4><i class="fas fa-file-invoice-dollar"></i> Dados do Contrato</h4>
+                    <div style="display:flex; gap:15px; margin-top:10px;">
+                        <div class="info-destaque" style="flex:1;">
+                            <label>Margem Importada</label>
+                            <span id="cliMargem">R$ 0,00</span>
+                        </div>
+                        <div class="info-destaque" style="flex:1;">
+                            <label>Banco de Origem</label>
+                            <span id="cliBanco" style="color:#3b82f6;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabulação -->
+        <div class="tabulacao-container">
+            <div class="tabulacao-header">
+                <button class="tab-btn active" onclick="switchTab('tabBancos')"><i class="fas fa-building-columns"></i> Consulta de Bancos</button>
+                <button class="tab-btn" onclick="switchTab('tabMargem')"><i class="fas fa-money-bill-wave"></i> Ajuste de Margem</button>
+                <button class="tab-btn" onclick="switchTab('tabObs')"><i class="fas fa-sticky-note"></i> Observações Gerais</button>
+            </div>
+            
+            <div id="tabBancos" class="tab-content active">
+                <div class="tab-form-group">
+                    <label>Quais bancos o cliente é elegível?</label>
+                    <div class="custom-dropdown" id="dropdownBancosTab">
+                        <div class="dropdown-header" onclick="toggleDropdown('listBancosTab')">
+                            <span id="textBancosTab">Selecione os bancos...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="dropdown-list hidden" id="listBancosTab">
+                            <div style="padding:10px; color:#64748b; font-size:0.85rem;">Carregando bancos...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tabMargem" class="tab-content">
+                <div class="tab-form-group">
+                    <label>Margem Final Verificada (R$)</label>
+                    <input type="number" id="tabInputMargem" class="tab-input" placeholder="Ex: 1500.50" step="0.01">
+                    <span style="font-size:0.75rem; color:#64748b; margin-top:5px; display:block;">Se for diferente da importada, insira o valor real aprovado.</span>
+                </div>
+            </div>
+            
+            <div id="tabObs" class="tab-content">
+                <div class="tab-form-group">
+                    <label>Observações do Atendimento</label>
+                    <textarea id="tabInputObs" class="tab-textarea" placeholder="Digite os detalhes da negociação, motivos de recusa ou acordos feitos..."></textarea>
+                </div>
+            </div>
+
+            <div class="acoes-container">
+                <button class="btn-acao btn-nao-elegivel" onclick="salvarTabulacao('Não Elegível')">
+                    <i class="fas fa-times-circle"></i> Marcar como Não Elegível
+                </button>
+                <button class="btn-acao btn-elegivel" onclick="salvarTabulacao('Elegível')">
+                    <i class="fas fa-check-circle"></i> Marcar como Elegível
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="historico-container">
+        <div class="historico-header">
+            <h3><i class="fas fa-history"></i> Histórico de Clientes Trabalhados</h3>
+            <span style="font-size: 0.85rem; color: #64748b; background: var(--bg-main); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color);">
+                Últimos 5 clientes trabalhados e finalizados
+            </span>
+        </div>
+        <div class="historico-table-wrap">
+            <table class="historico-table">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>CPF</th>
+                        <th>Telefone</th>
+                        <th>Banco Base</th>
+                        <th>Bancos Elegíveis</th>
+                        <th>Margem</th>
+                        <th>Status Final</th>
+                        <th>Data Finalização</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="historicoTbody">
+                    <tr><td colspan="9" style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<div class="modal-overlay hidden" id="modalEditarCliente">
+    <div class="modal-box" style="max-width: 500px;">
+        <button class="modal-close" onclick="fecharModalEditar()"><i class="fas fa-times"></i></button>
+        <h2 class="modal-title">Editar Cliente Trabalhado</h2>
+        <p class="modal-subtitle">Corrija ou atualize as informações deste cliente.</p>
+
+        <input type="hidden" id="editCliId">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:15px;">
+            <div class="tab-form-group">
+                <label>Nome do Cliente</label>
+                <input type="text" id="editCliNome" class="tab-input">
+            </div>
+            <div class="tab-form-group">
+                <label>Telefone Principal</label>
+                <input type="text" id="editCliTel" class="tab-input">
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr; gap:15px; margin-bottom:15px;">
+            <div class="tab-form-group">
+                <label>Bancos Elegíveis</label>
+                <div class="custom-dropdown" id="dropdownBancosEdit">
+                    <div class="dropdown-header" onclick="toggleDropdown('listBancosEdit')">
+                        <span id="textBancosEdit">Selecione os bancos...</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown-list hidden" id="listBancosEdit">
+                        <div style="padding:10px; color:#64748b; font-size:0.85rem;">Carregando bancos...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-form-group">
+                <label>Margem Final (R$)</label>
+                <input type="number" step="0.01" id="editCliMargem" class="tab-input">
+            </div>
+        </div>
+
+        <div class="tab-form-group">
+            <label>Status Final</label>
+            <select id="editCliStatus" class="tab-input">
+                <option value="Elegível">Elegível</option>
+                <option value="Não Elegível">Não Elegível</option>
+            </select>
+        </div>
+
+        <div class="modal-footer" style="margin-top:20px;">
+            <button class="btn-modal-cancel" onclick="fecharModalEditar()">Cancelar</button>
+            <button class="btn-modal-import" style="background:#3b82f6;" onclick="salvarEdicaoCliente()">
+                <i class="fas fa-save"></i> Salvar Alterações
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalObs">
+    <div class="modal-box" style="max-width: 400px;">
+        <button class="modal-close" onclick="document.getElementById('modalObs').classList.add('hidden')"><i class="fas fa-times"></i></button>
+        <h2 class="modal-title" style="margin-bottom: 15px; font-size: 1.1rem;"><i class="fas fa-comment-dots" style="color:#8b5cf6; margin-right:6px;"></i> Observação do Atendimento</h2>
+        <div id="textoObsModal" style="color: var(--text-main); font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; background: var(--bg-main); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    carregarBancosDisponiveis();
+    carregarDashboard();
+    carregarHistorico();
+    verificarClienteAtual();
+});
+
+let bancosDisponiveisGeral = [];
+
+function verificarClienteAtual() {
+    fetch('/api/vendedor/proximo_cliente')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.cliente) {
+                exibirCliente(data.cliente);
+            }
+        });
+}
+
+function carregarBancosDisponiveis() {
+    fetch('/api/bancos?ativos=1')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                bancosDisponiveisGeral = data.bancos;
+                renderizarDropdownBancos('listBancosTab', 'textBancosTab');
+                renderizarDropdownBancos('listBancosEdit', 'textBancosEdit');
+            }
+        });
+}
+
+function renderizarDropdownBancos(listId, textId) {
+    const listEl = document.getElementById(listId);
+    if (!listEl) return;
+    
+    if (bancosDisponiveisGeral.length === 0) {
+        listEl.innerHTML = '<div style="padding:10px; color:#64748b; font-size:0.85rem;">Nenhum banco cadastrado</div>';
+        return;
+    }
+    
+    listEl.innerHTML = bancosDisponiveisGeral.map(b => `
+        <label>
+            <input type="checkbox" value="${b.nome}" onchange="atualizarTextoDropdown('${listId}', '${textId}')"> ${b.nome}
+        </label>
+    `).join('');
+}
+
+function toggleDropdown(listId) {
+    const list = document.getElementById(listId);
+    list.classList.toggle('hidden');
+}
+
+// Fechar dropdowns se clicar fora
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-dropdown')) {
+        document.querySelectorAll('.dropdown-list').forEach(l => l.classList.add('hidden'));
+    }
+});
+
+function atualizarTextoDropdown(listId, textId) {
+    const list = document.getElementById(listId);
+    const textSpan = document.getElementById(textId);
+    const marcados = Array.from(list.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    
+    if (marcados.length === 0) {
+        textSpan.textContent = 'Selecione os bancos...';
+    } else if (marcados.length <= 2) {
+        textSpan.textContent = marcados.join(', ');
+    } else {
+        textSpan.textContent = marcados.length + ' bancos selecionados';
+    }
+}
+
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+}
+
+function formatPhone(p) {
+    if (!p) return '';
+    let clean = String(p).split('.')[0].replace(/\D/g, '');
+    if (clean.length === 11) {
+        return `(${clean.substring(0,2)}) ${clean.substring(2,7)}-${clean.substring(7)}`;
+    } else if (clean.length === 10) {
+        return `(${clean.substring(0,2)}) ${clean.substring(2,6)}-${clean.substring(6)}`;
+    }
+    return p;
+}
+
+function carregarDashboard() {
+    fetch('/api/vendedor/dashboard')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const s = data.stats;
+                document.getElementById('statPendentes').textContent = s.pendentes;
+                document.getElementById('statAtendidos').textContent = s.leads_atendidos;
+                document.getElementById('statConversao').textContent = s.taxa_conversao + '%';
+                document.getElementById('statValorTotal').textContent = formatarMoeda(s.valor_total);
+            }
+        });
+}
+
+let isFilaVazia = false;
+
+function buscarProximoCliente() {
+    // Impede de buscar próximo se já tem um na tela sendo trabalhado
+    if (!document.getElementById('workspaceCliente').classList.contains('hidden')) {
+        mostrarToast('Você precisa tabular o cliente atual antes de buscar o próximo.', 'warning');
+        return;
+    }
+
+    if (isFilaVazia) {
+        solicitarMaisLeads();
+        return;
+    }
+    
+    fetch('/api/vendedor/proximo_cliente')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.cliente) {
+                isFilaVazia = false;
+                exibirCliente(data.cliente);
+                resetEmptyState();
+            } else {
+                isFilaVazia = true;
+                document.getElementById('workspaceCliente').classList.add('hidden');
+                document.getElementById('emptyClienteBox').classList.remove('hidden');
+                mostrarToast('Nenhum cliente pendente no momento.', 'warning');
+                setEmptyStateAgotado();
+            }
+        });
+}
+
+function setEmptyStateAgotado() {
+    document.getElementById('emptyTitle').textContent = 'Fila Esgotada';
+    document.getElementById('emptyDesc').textContent = 'Você finalizou todos os clientes atribuídos a você. Solicite mais leads para a administração.';
+    const btn = document.getElementById('btnEmptyAcao');
+    btn.classList.remove('btn-elegivel');
+    btn.classList.add('btn-nao-elegivel');
+    btn.innerHTML = '<i class="fas fa-magic"></i> <span>Receber Novos Leads</span>';
+    
+    const btnTop = document.getElementById('btnProximoLeadTop');
+    btnTop.style.background = '#8b5cf6';
+    btnTop.innerHTML = '<i class="fas fa-magic"></i> Receber Novos Leads';
+}
+
+function resetEmptyState() {
+    isFilaVazia = false;
+    document.getElementById('emptyTitle').textContent = 'Nenhum cliente na tela';
+    document.getElementById('emptyDesc').textContent = 'Você não possui clientes pendentes no momento. Clique no botão abaixo para buscar o próximo lead atribuído a você.';
+    const btn = document.getElementById('btnEmptyAcao');
+    btn.classList.remove('btn-nao-elegivel');
+    btn.classList.add('btn-elegivel');
+    btn.innerHTML = '<i class="fas fa-search"></i> <span>Buscar Próximo Lead</span>';
+    
+    const btnTop = document.getElementById('btnProximoLeadTop');
+    btnTop.style.background = '#10b981';
+    btnTop.innerHTML = '<i class="fas fa-forward"></i> Próximo Lead';
+}
+
+function solicitarMaisLeads() {
+    const btn = document.getElementById('btnEmptyAcao');
+    const btnTop = document.getElementById('btnProximoLeadTop');
+    
+    btn.disabled = true;
+    btnTop.disabled = true;
+
+    fetch('/api/vendedor/receber_leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            mostrarToast(data.message, 'success');
+            // Tenta buscar o primeiro lead recebido após um pequeno delay
+            setTimeout(() => {
+                buscarProximoCliente();
+                btn.disabled = false;
+                btnTop.disabled = false;
+            }, 1000);
+        } else {
+            mostrarToast(data.message, 'warning');
+            btn.disabled = false;
+            btnTop.disabled = false;
+        }
+    })
+    .catch(err => {
+        mostrarToast('Erro ao processar distribuição.', 'error');
+        btn.disabled = false;
+        btnTop.disabled = false;
+    });
+}
+
+function exibirCliente(cli) {
+    document.getElementById('emptyClienteBox').classList.add('hidden');
+    document.getElementById('workspaceCliente').classList.remove('hidden');
+    
+    document.getElementById('clienteIdAtual').value = cli.id;
+    document.getElementById('cliNome').textContent = cli.nome;
+    document.getElementById('cliAvatar').textContent = cli.nome.charAt(0).toUpperCase();
+    document.getElementById('cliCpf').textContent = cli.cpf || '-';
+    
+    let tels = [];
+    if(cli.telefone1) tels.push(formatPhone(cli.telefone1));
+    if(cli.telefone2) tels.push(formatPhone(cli.telefone2));
+    if(cli.telefone3) tels.push(formatPhone(cli.telefone3));
+    if(cli.telefone4) tels.push(formatPhone(cli.telefone4));
+    
+    const telBox = document.getElementById('cliTelefones');
+    if (tels.length > 0) {
+        telBox.innerHTML = tels.map(t => `<span style="display:flex;align-items:center;gap:6px;"><i class="fas fa-phone-alt" style="font-size:0.9rem;color:#94a3b8;"></i> ${t}</span>`).join('');
+    } else {
+        telBox.innerHTML = '<span>-</span>';
+    }
+    
+    document.getElementById('cliMargem').textContent = formatarMoeda(cli.margem);
+    document.getElementById('cliBanco').textContent = cli.banco_nome || '-';
+    
+    // Reseta form
+    document.querySelectorAll('#listBancosTab input[type="checkbox"]').forEach(cb => cb.checked = false);
+    atualizarTextoDropdown('listBancosTab', 'textBancosTab');
+    
+    document.getElementById('tabInputMargem').value = cli.margem || '';
+    document.getElementById('tabInputObs').value = '';
+    switchTab('tabBancos');
+}
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
+function salvarTabulacao(status) {
+    const id = document.getElementById('clienteIdAtual').value;
+    if(!id) return;
+    
+    const checkboxes = document.querySelectorAll('#listBancosTab input[type="checkbox"]:checked');
+    const bancos = Array.from(checkboxes).map(cb => cb.value).join(', ');
+    
+    let margemRaw = document.getElementById('tabInputMargem').value;
+    // Trata caso venha com vírgula ou em formato string
+    let margem = parseFloat(String(margemRaw).replace(',', '.')) || 0;
+    const obs = document.getElementById('tabInputObs').value.trim();
+    
+    fetch('/api/vendedor/salvar_tabulacao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            cliente_id: id,
+            status: status,
+            bancos_elegiveis: bancos,
+            margem_verificada: margem,
+            observacao: obs
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success) {
+            mostrarToast(`Cliente marcado como ${status}!`, status === 'Elegível' ? 'success' : 'error');
+            document.getElementById('workspaceCliente').classList.add('hidden');
+            carregarDashboard();
+            carregarHistorico();
+            setTimeout(buscarProximoCliente, 1000);
+        } else {
+            alert(data.message);
+        }
+    });
+}
+
+function carregarHistorico() {
+    fetch('/api/vendedor/historico')
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('historicoTbody');
+            if (data.success && data.clientes.length > 0) {
+                tbody.innerHTML = '';
+                data.clientes.forEach(c => {
+                    const isElegivel = c.status.toLowerCase().includes('elegível') && !c.status.toLowerCase().includes('não');
+                    const badgeClass = isElegivel ? 'elegivel' : 'nao-elegivel';
+                    const iconClass = isElegivel ? 'fa-check-circle' : 'fa-times-circle';
+                    
+                    let bancosHtml = '-';
+                    if(c.bancos_elegiveis) {
+                        const badges = c.bancos_elegiveis.split(',').map(b => `<span class="badge-banco">${b.trim()}</span>`).join('');
+                        bancosHtml = `<div style="display: flex; flex-wrap: wrap; gap: 4px; max-width: 250px;">${badges}</div>`;
+                    }
+                    let botoesAcoes = `<div style="display:flex; gap:12px;">
+                        <button class="btn-editar-hist" onclick="abrirModalEditar(${c.id})"><i class="fas fa-edit"></i> Editar</button>`;
+                    if(c.observacao && c.observacao.trim() !== '') {
+                        const obsEscaped = c.observacao.replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+                        botoesAcoes += `<button class="btn-editar-hist" style="color:#8b5cf6;" onclick="abrirModalObs('${obsEscaped}')"><i class="fas fa-comment-dots"></i> Obs</button>`;
+                    }
+                    botoesAcoes += `</div>`;
+                    
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${c.nome}</strong></td>
+                        <td>${c.cpf || '-'}</td>
+                        <td>${c.telefone1 ? formatPhone(c.telefone1) : '-'}</td>
+                        <td><span class="badge-banco" style="background:#f1f5f9; color:#475569;">${c.banco_nome || '-'}</span></td>
+                        <td>${bancosHtml}</td>
+                        <td style="color:#10b981; font-weight:600;">${formatarMoeda(c.margem_verificada || c.margem)}</td>
+                        <td><span class="status-badge ${badgeClass}"><i class="fas ${iconClass}"></i> ${c.status}</span></td>
+                        <td>${c.data_tabulacao ? new Date(c.data_tabulacao).toLocaleString('pt-BR') : '-'}</td>
+                        <td>${botoesAcoes}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px; color:#64748b;">Nenhum histórico encontrado.</td></tr>';
+            }
+        });
+}
+
+function mostrarToast(msg, tipo='success') {
+    const container = document.getElementById('globalToastContainer');
+    const toast = document.createElement('div');
+    const cor = tipo === 'success' ? '#10b981' : (tipo === 'error' ? '#ef4444' : '#f59e0b');
+    
+    toast.style.cssText = `
+        background: #ffffff;
+        border-left: 5px solid ${cor};
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        padding: 12px 20px;
+        color: var(--text-main);
+        font-weight: 500;
+        animation: slideInRight 0.3s ease forwards;
+    `;
+    toast.innerHTML = `<i class="${tipo === 'success' ? 'fas fa-check-circle' : 'fas fa-info-circle'}" style="color:${cor}; margin-right:8px;"></i> ${msg}`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function abrirModalEditar(id) {
+    fetch('/api/vendedor/cliente/' + id)
+        .then(r => r.json())
+        .then(data => {
+            if(data.success && data.cliente) {
+                const c = data.cliente;
+                document.getElementById('editCliId').value = c.id;
+                document.getElementById('editCliNome').value = c.nome || '';
+                document.getElementById('editCliTel').value = formatPhone(c.telefone1 || '');
+                
+                // Preencher dropdown de bancos
+                const bancosElegiveis = (c.bancos_elegiveis || '').split(',').map(b => b.trim());
+                document.querySelectorAll('#listBancosEdit input[type="checkbox"]').forEach(cb => {
+                    cb.checked = bancosElegiveis.includes(cb.value);
+                });
+                atualizarTextoDropdown('listBancosEdit', 'textBancosEdit');
+                
+                document.getElementById('editCliMargem').value = c.margem_verificada || c.margem || '';
+                document.getElementById('editCliStatus').value = c.status || 'Elegível';
+                
+                document.getElementById('modalEditarCliente').classList.remove('hidden');
+            } else {
+                mostrarToast('Erro ao carregar dados do cliente.', 'error');
+            }
+        });
+}
+
+function fecharModalEditar() {
+    document.getElementById('modalEditarCliente').classList.add('hidden');
+}
+
+function abrirModalObs(texto) {
+    document.getElementById('textoObsModal').textContent = texto;
+    document.getElementById('modalObs').classList.remove('hidden');
+}
+
+function salvarEdicaoCliente() {
+    const id = document.getElementById('editCliId').value;
+    const checkboxes = document.querySelectorAll('#listBancosEdit input[type="checkbox"]:checked');
+    const bancosStr = Array.from(checkboxes).map(cb => cb.value).join(', ');
+
+    const data = {
+        nome: document.getElementById('editCliNome').value.trim(),
+        telefone1: document.getElementById('editCliTel').value.trim(),
+        bancos_elegiveis: bancosStr,
+        margem_verificada: parseFloat(String(document.getElementById('editCliMargem').value).replace(',', '.')) || 0,
+        status: document.getElementById('editCliStatus').value
+    };
+    
+    fetch('/api/vendedor/cliente/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if(res.success) {
+            fecharModalEditar();
+            mostrarToast('Cliente atualizado com sucesso!', 'success');
+            carregarHistorico();
+            carregarDashboard();
+        } else {
+            alert(res.message);
+        }
+    });
+}
+function copiarTexto(texto, btn = null) {
+    if (!texto || texto === '...' || texto === '-') return;
+    navigator.clipboard.writeText(texto).then(() => {
+        mostrarToast('Copiado para a área de transferência!', 'success');
+        if (btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+            btn.classList.add('copied-success');
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('copied-success');
+            }, 2000);
+        }
+    });
+}
+
+function copiarTodosContatos(btn = null) {
+    const telBox = document.getElementById('cliTelefones');
+    const spans = telBox.querySelectorAll('span');
+    let texto = "";
+    spans.forEach((s, idx) => {
+        const t = s.innerText.trim();
+        if (t && t !== '-') {
+            texto += t + (idx < spans.length - 1 ? "\n" : "");
+        }
+    });
+    
+    if (!texto) return;
+    copiarTexto(texto, btn);
+}
+</script>
+{% endblock %}

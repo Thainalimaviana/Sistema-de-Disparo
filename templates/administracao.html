@@ -1,0 +1,3577 @@
+{% extends "base.html" %}
+
+{% block title %}Administração - Consig Tech{% endblock %}
+{% block page_title %}Administração{% endblock %}
+
+{% block header_actions %}
+<div style="display: flex; gap: 12px; align-items: center;">
+  <button class="btn-header-outline" id="btnMonitorChat">
+    <i class="far fa-comment"></i> Monitor de Chat
+  </button>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── Botões do Cabeçalho (Header Actions) ── */
+.btn-header-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid #bbf7d0; /* Borda verde bem suave baseada na imagem */
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.btn-header-outline i {
+  font-size: 1.1rem;
+  color: #0f172a;
+  transition: color 0.2s;
+}
+.btn-header-outline:hover {
+  background: #f0fdf4;
+  border-color: #28a745;
+  color: #166534;
+  box-shadow: 0 2px 4px rgba(40,167,69,0.05);
+}
+.btn-header-outline:hover i {
+  color: #28a745;
+}
+
+/* Card de comunicado */
+.comunicado-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 25px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.comunicado-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.comunicado-icon {
+  width: 40px;
+  height: 40px;
+  background: #f97316;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.1rem;
+}
+.comunicado-header h3 { margin: 0; font-size: 1.05rem; color: #92400e; }
+.comunicado-desc { font-size: 0.85rem; color: #28a745; margin: 0 0 20px 0; }
+.form-field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  display: block;
+}
+.form-field-label span { color: #ef4444; }
+.comunicado-input, .comunicado-select, .comunicado-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+.comunicado-input:focus,
+.comunicado-select:focus,
+.comunicado-textarea:focus { border-color: #28a745; box-shadow: 0 0 0 3px rgba(40,167,69,0.1); }
+.comunicado-field { margin-bottom: 18px; }
+.comunicado-textarea { resize: vertical; min-height: 100px; }
+.char-count { text-align: right; font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+.comunicado-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.comunicado-footer .aviso { font-size: 0.8rem; color: #92400e; }
+.btn-criar-comunicado {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-criar-comunicado:hover { background: #1c7c34; }
+
+/* Solicitações de Leads */
+.leads-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 25px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.leads-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.leads-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.leads-icon {
+  width: 38px;
+  height: 38px;
+  background: #e0e7ff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4361ee;
+  font-size: 1rem;
+}
+.leads-card-title h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; }
+.leads-card-title p { margin: 2px 0 0; font-size: 0.8rem; color: #64748b; }
+.btn-atualizar {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-atualizar:hover { background: #f1f5f9; }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  color: #94a3b8;
+  gap: 12px;
+  background: #f8fafc;
+}
+.empty-state i { font-size: 2.5rem; }
+.empty-state p { margin: 0; font-size: 0.9rem; }
+
+/* ── FILTRO DE PERÍODO MODERNO ── */
+.filter-section-modern {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+.filter-title-modern {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16px;
+}
+.filter-title-modern i {
+  color: #28a745;
+  font-size: 1.1rem;
+}
+.filter-row-modern {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.filter-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+.filter-input-group label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+.filter-input-wrapper {
+  position: relative;
+}
+.filter-input-wrapper i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 1rem;
+}
+.filter-input-wrapper input {
+  width: 100%;
+  padding: 10px 14px 10px 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.filter-input-wrapper input:focus { border-color: #28a745; box-shadow: 0 0 0 3px rgba(40,167,69,0.1); }
+.filter-actions-modern {
+  display: flex;
+  gap: 12px;
+}
+.btn-limpar-modern {
+  padding: 10px 20px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-limpar-modern:hover { background: #e2e8f0; }
+.btn-aplicar-modern {
+  padding: 10px 24px;
+  background: #28a745;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+.btn-aplicar-modern:hover { background: #1c7c34; }
+
+/* Sub-tabs */
+.analise-subtabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+.tab-admin-item {
+  flex: 1;
+  padding: 14px 10px;
+  border: none;
+  background: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  user-select: none;
+}
+.tab-admin-item:hover { color: #1e293b; background: #f8fafc; }
+.tab-admin-item.active { color: #28a745; border-bottom-color: #28a745; background: #fff; }
+
+/* Busca de vendedor */
+.vendedor-search-bar {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.search-input-wrap {
+  position: relative;
+  max-width: 350px;
+}
+.search-input-wrap i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+.search-input-wrap input {
+  width: 100%;
+  padding: 9px 14px 9px 35px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background: #fffbeb;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.search-input-wrap input::placeholder { color: #94a3b8; }
+
+/* Tabela de vendedores */
+.vendedor-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.vendedor-table th {
+  text-align: left;
+  padding: 12px 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #28a745;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+.vendedor-table td {
+  padding: 14px 20px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+}
+.vendedor-table tr:last-child td { border-bottom: none; }
+.vendedor-table tr:hover td { background: #f8fafc; }
+.taxa-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #f3e8ff;
+  color: #7c3aed;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.status-ativo {
+  display: inline-block;
+  padding: 3px 12px;
+  background: #eaf7ed;
+  color: #28a745;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+.btn-ver-detalhes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: none;
+  border: none;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.btn-ver-detalhes:hover { background: #f1f5f9; }
+
+/* ── Dark mode ── */
+.theme-dark .btn-header-outline { background: #1e293b; border-color: #334155; color: #f1f5f9; }
+.theme-dark .btn-header-outline i { color: #cbd5e1; }
+.theme-dark .btn-header-outline:hover { background: #052e16; border-color: #28a745; color: #fff; }
+.theme-dark .btn-header-outline:hover i { color: #28a745; }
+.theme-dark .comunicado-card { background: #162032; border-color: #1e3a5f; }
+.theme-dark .comunicado-header h3 { color: #fbbf24; }
+.theme-dark .comunicado-desc { color: #86efac; }
+.theme-dark .comunicado-input,
+.theme-dark .comunicado-select,
+.theme-dark .comunicado-textarea { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+.theme-dark .comunicado-input::placeholder,
+.theme-dark .comunicado-textarea::placeholder { color: #64748b; }
+.theme-dark .form-field-label { color: #cbd5e1; }
+.theme-dark .comunicado-footer .aviso { color: #fbbf24; }
+.theme-dark .leads-card { background: #1e293b; border-color: #334155; }
+.theme-dark .leads-card-header { border-color: #334155; }
+.theme-dark .leads-card-title h3 { color: #f1f5f9; }
+.theme-dark .leads-card-title p { color: #94a3b8; }
+.theme-dark .btn-atualizar { background: #1e293b; border-color: #475569; color: #cbd5e1; }
+.theme-dark .btn-atualizar:hover { background: #334155; color: #f1f5f9; }
+.theme-dark .empty-state { background: #0f172a; color: #64748b; }
+.theme-dark .filter-section-modern { background: #1e293b; border-color: #334155; }
+.theme-dark .filter-title-modern { color: #f1f5f9; }
+.theme-dark .filter-input-group label { color: #cbd5e1; }
+.theme-dark .filter-input-wrapper input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+.theme-dark .btn-limpar-modern { background: #334155; color: #cbd5e1; border-color: #475569; }
+.theme-dark .analise-subtabs { background: #1e293b; border-bottom-color: #334155; }
+.theme-dark .analise-subtab-btn { color: #94a3b8; }
+.theme-dark .analise-subtab-btn:hover { background: #334155; color: #f1f5f9; }
+.theme-dark .analise-subtab-btn.active { color: #28a745; border-bottom-color: #28a745; background: #1e293b; }
+.theme-dark .vendedor-search-bar { border-bottom-color: #334155; }
+.theme-dark .search-input-wrap input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+.theme-dark .search-input-wrap input::placeholder { color: #64748b; }
+.theme-dark .vendedor-table th { background: #1e293b; border-bottom-color: #334155; color: #28a745; }
+.theme-dark .vendedor-table td { border-bottom-color: #1e293b; color: #cbd5e1; }
+.theme-dark .vendedor-table tr:hover td { background: #0f172a; }
+.theme-dark .taxa-badge { background: #2e1065; color: #c4b5fd; }
+.theme-dark .status-ativo { background: #052e16; color: #86efac; }
+.theme-dark .btn-ver-detalhes { color: #94a3b8; }
+.theme-dark .btn-ver-detalhes:hover { background: #334155; color: #f1f5f9; }
+
+/* ── Cards de solicitação de leads ── */
+.sol-card {
+  padding: 18px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.sol-card:last-child { border-bottom: none; }
+/* Cartão de Solicitação de Leads */
+.sol-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  gap: 15px;
+  transition: all 0.2s;
+}
+.sol-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.sol-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  display: flex; align-items: center; justify-content: center;
+  color: #4361ee; font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.sol-info { flex: 1; }
+.sol-info strong { font-size: 0.95rem; color: var(--text-main); display: block; }
+.sol-info span { font-size: 0.78rem; color: #64748b; }
+.sol-actions { display: flex; align-items: center; gap: 10px; }
+.sol-qty-input {
+  width: 70px; padding: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px; font-size: 0.85rem;
+  text-align: center; outline: none;
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+.btn-aprovar {
+  padding: 8px 16px;
+  background: #28a745; color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 0.8rem; font-weight: 700;
+  cursor: pointer;
+}
+.btn-rejeitar {
+  padding: 8px 16px;
+  background: #fee2e2; color: #ef4444;
+  border: none; border-radius: 8px;
+  font-size: 0.8rem; font-weight: 700;
+  cursor: pointer;
+}
+
+/* Switch Toggle */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 22px;
+}
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .4s;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+input:checked + .slider {
+  background-color: #28a745;
+}
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+.slider.round {
+  border-radius: 22px;
+}
+.slider.round:before {
+  border-radius: 50%;
+}
+.theme-dark .sol-qty-input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+
+/* ── Modal Importar ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 30px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  position: relative;
+  animation: modalIn 0.2s ease;
+}
+@keyframes modalIn {
+  from { opacity:0; transform: translateY(-20px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.modal-close {
+  position: absolute;
+  top: 16px; right: 18px;
+  background: none; border: none;
+  font-size: 1.2rem; color: #94a3b8;
+  cursor: pointer;
+}
+.modal-close:hover { color: #475569; }
+.modal-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0 0 6px; }
+.modal-subtitle { font-size: 0.82rem; color: #64748b; margin: 0 0 22px; line-height: 1.5; }
+.modal-label {
+  font-size: 0.83rem; font-weight: 700;
+  color: #374151; margin-bottom: 7px; display: block;
+}
+.modal-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #28a745;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background: #f0fdf4;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+.modal-hint { font-size: 0.78rem; color: #28a745; margin-bottom: 18px; }
+.upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 14px;
+}
+.upload-area:hover, .upload-area.drag { border-color: #28a745; background: #f0fdf4; }
+.upload-area i { font-size: 2.2rem; color: #94a3b8; display: block; margin-bottom: 12px; }
+.upload-area .upload-cta { font-size: 0.92rem; color: #475569; }
+.upload-area .upload-cta span { color: #28a745; font-weight: 700; cursor: pointer; }
+.upload-area .upload-fmt { font-size: 0.8rem; color: #28a745; margin-top: 6px; }
+.upload-area .upload-filename { font-size: 0.88rem; color: #28a745; font-weight: 600; margin-top: 8px; }
+.modal-warn {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.83rem;
+  color: #92400e;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-info {
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+.modal-info strong { font-size: 0.85rem; color: #1e40af; }
+.modal-info ul { margin: 8px 0 0; padding-left: 16px; }
+.modal-info li { font-size: 0.8rem; color: #3b82f6; margin-bottom: 3px; }
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+.btn-modal-cancel {
+  padding: 9px 22px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-modal-cancel:hover { background: #f1f5f9; }
+.btn-modal-import {
+  padding: 9px 22px;
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-modal-import:hover { background: #1c7c34; }
+.btn-modal-import:disabled { background: #94a3b8; cursor: not-allowed; }
+.theme-dark .modal-box { background: #1e293b; }
+.theme-dark .modal-title { color: #f1f5f9; }
+.theme-dark .modal-subtitle { color: #94a3b8; }
+.theme-dark .modal-label { color: #cbd5e1; }
+.theme-dark .modal-select { background: #0f172a; border-color: #28a745; color: #f1f5f9; }
+.theme-dark .upload-area { background: #0f172a; border-color: #334155; }
+.theme-dark .upload-area:hover { border-color: #28a745; background: #052e16; }
+.theme-dark .modal-warn { background: #1c1505; border-color: #854d0e; color: #fbbf24; }
+.theme-dark .modal-info { background: #0c1a3a; }
+.theme-dark .modal-info strong { color: #93c5fd; }
+.theme-dark .modal-info li { color: #60a5fa; }
+.theme-dark .btn-modal-cancel { background: #1e293b; border-color: #475569; color: #cbd5e1; }
+
+/* ── Distribuição por Vendedor ── */
+.vend-dist-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+.vend-dist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+}
+.vend-dist-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.vend-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.vend-dist-nome { font-size: 0.92rem; font-weight: 700; color: #1e293b; }
+.vend-dist-sub { font-size: 0.78rem; color: #28a745; margin-top: 2px; }
+.vend-conv-badge {
+  padding: 4px 12px;
+  background: #eff6ff;
+  color: #3b82f6;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.vend-dist-ultimos {
+  border-top: 1px solid #f1f5f9;
+  padding: 8px 18px 12px;
+}
+.vend-dist-ultimos-label {
+  font-size: 0.78rem;
+  color: #28a745;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.vend-dist-cliente-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #f8fafc;
+  font-size: 0.82rem;
+}
+.vend-dist-cliente-row:last-child { border-bottom: none; }
+.vend-dist-cliente-row span:first-child { color: #374151; }
+.vend-dist-cliente-row span:last-child { color: #28a745; font-size: 0.8rem; }
+.theme-dark .vend-dist-card { background: #1e293b; border-color: #334155; }
+.theme-dark .vend-dist-nome { color: #f1f5f9; }
+.theme-dark .vend-dist-ultimos { border-top-color: #334155; }
+.theme-dark .vend-dist-cliente-row { border-bottom-color: #1e293b; }
+.theme-dark .vend-dist-cliente-row span:first-child { color: #cbd5e1; }
+ 
+/* --- Novo Design de Performance Ranking --- */
+.ranking-perf-container {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ranking-perf-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 5px;
+}
+.ranking-perf-title i { color: #f59e0b; }
+.perf-card {
+  background: #ffffff;
+  border: 1px solid #eaf7ed;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(40,167,69,0.03);
+  position: relative;
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
+}
+.perf-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+.perf-card-user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.perf-rank-circle {
+  width: 36px; height: 36px;
+  background: #28a745;
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1rem;
+}
+.perf-user-name { font-size: 1.15rem; font-weight: 700; color: #1e293b; }
+.perf-badge-lugar {
+  padding: 4px 12px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-toggle-stats {
+  width: 40px; height: 40px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.btn-toggle-stats:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
+.perf-stats-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+.stat-box-perf {
+  padding: 16px 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stat-box-perf span:first-child { font-size: 0.8rem; font-weight: 600; color: #64748b; }
+.stat-box-perf strong { font-size: 1.4rem; font-weight: 700; }
+.stat-atribuidos { background: #eff6ff; } .stat-atribuidos strong { color: #2563eb; }
+.stat-trabalhados { background: #fdf4ff; } .stat-trabalhados strong { color: #d946ef; }
+.stat-elegiveis { background: #f0fdf4; } .stat-elegiveis strong { color: #16a34a; }
+.stat-pendentes { background: #fff7ed; } .stat-pendentes strong { color: #ea580c; }
+.stat-conversao { background: #fefce8; } .stat-conversao strong { color: #ca8a04; }
+.perf-details-area {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f1f5f9;
+  display: none;
+  animation: slideDownPerf 0.3s ease forwards;
+}
+@keyframes slideDownPerf { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.details-grid-perf {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+}
+.details-col-title { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 20px; }
+.detail-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f8fafc;
+  font-size: 0.9rem;
+}
+.detail-line:last-child { border-bottom: none; }
+.detail-line span:first-child { color: #64748b; }
+.detail-line strong { color: #1e293b; }
+.detail-line strong.val-green { color: #16a34a; }
+.bank-usage-item { margin-bottom: 18px; }
+.bank-info-line { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600; }
+.bank-progress-bg { width: 100%; height: 10px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+.bank-progress-fill { height: 100%; background: #28a745; border-radius: 5px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.perf-summary-mini {
+  margin-top: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+.summary-line-mini { display: flex; align-items: center; gap: 10px; }
+.summary-line-mini.green { color: #16a34a; }
+.summary-line-mini.red { color: #dc2626; }
+.summary-line-mini i { font-size: 1rem; }
+
+.theme-dark .perf-card { background: #1e293b; border-color: #334155; box-shadow: none; }
+.theme-dark .perf-user-name { color: #f1f5f9; }
+.theme-dark .perf-badge-lugar { background: #3b2a05; color: #fbbf24; }
+.theme-dark .btn-toggle-stats { background: #0f172a; border-color: #334155; color: #94a3b8; }
+.theme-dark .stat-box-perf span:first-child { color: #94a3b8; }
+.theme-dark .stat-atribuidos { background: #0c1a3a; }
+.theme-dark .stat-trabalhados { background: #2e1065; }
+.theme-dark .stat-elegiveis { background: #052e16; }
+.theme-dark .stat-pendentes { background: #1c1505; }
+.theme-dark .stat-conversao { background: #1c1905; }
+.theme-dark .perf-details-area { border-top-color: #334155; }
+.theme-dark .details-col-title { color: #f1f5f9; }
+.theme-dark .detail-line { border-bottom-color: #334155; }
+.theme-dark .detail-line strong { color: #f1f5f9; }
+.theme-dark .bank-progress-bg { background: #0f172a; }
+
+/* --- Design da Aba de Consultas --- */
+.consultas-search-container {
+  padding: 15px 25px;
+  background: #fff;
+  border-bottom: 1px solid #f1f5f9;
+}
+.consultas-search-input-wrapper {
+  position: relative;
+  max-width: 450px;
+}
+.consultas-search-input-wrapper i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+.consultas-search-input {
+  width: 100%;
+  padding: 12px 15px 12px 42px;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.consultas-search-input:focus {
+  background: #fff;
+  border-color: #28a745;
+  box-shadow: 0 0 0 4px rgba(40,167,69,0.05);
+  outline: none;
+}
+.consultas-table-container {
+  overflow-x: auto;
+}
+.consultas-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.consultas-table th {
+  text-align: left;
+  padding: 18px 25px;
+  color: #28a745;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #fff;
+  border-bottom: 2px solid #f1f5f9;
+}
+.consultas-table td {
+  padding: 16px 25px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  border-bottom: 1px solid #f8fafc;
+}
+.consultas-table tr:hover { background: #fcfdfd; }
+.status-badge-perf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.status-perf-elegivel { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+.status-perf-naoelegivel { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
+.theme-dark .consultas-search-container { background: #1e293b; border-color: #334155; }
+.theme-dark .consultas-search-input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+.theme-dark .consultas-table th { background: #1e293b; border-bottom-color: #334155; }
+.theme-dark .consultas-table td { color: #cbd5e1; border-bottom-color: #334155; }
+.theme-dark .consultas-table tr:hover { background: #0f172a; }
+
+/* --- NOVO DESIGN DO MONITOR --- */
+.monitor-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px); z-index: 9998; align-items: center; justify-content: center; padding: 20px;
+}
+.monitor-overlay.open { display: flex; }
+
+.monitor-box-new {
+  background: #ffffff; border-radius: 12px; width: 100%; max-width: 1300px; height: 90vh;
+  display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  overflow: hidden; animation: monitorIn 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes monitorIn { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* Cabeçalho Global do Monitor */
+.monitor-topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 24px; border-bottom: 1px solid #e2e8f0; background: #fff;
+}
+.monitor-topbar-left { display: flex; align-items: center; gap: 16px; }
+.monitor-back-btn {
+  background: none; border: none; font-size: 1.2rem; color: #1e293b; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+}
+.monitor-back-btn:hover { background: #f1f5f9; }
+.monitor-topbar-title { display: flex; align-items: center; gap: 10px; }
+.monitor-topbar-title i { font-size: 1.4rem; color: #28a745; }
+.monitor-topbar-title h2 { margin: 0; font-size: 1.2rem; font-weight: 700; color: #1e293b; }
+.monitor-topbar-title p { margin: 2px 0 0; font-size: 0.85rem; color: #28a745; }
+.monitor-topbar-stats { display: flex; gap: 10px; }
+.monitor-top-badge {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #475569;
+}
+
+/* Layout Duplo: Sidebar e Área Principal */
+.monitor-body { display: flex; flex: 1; overflow: hidden; }
+
+/* Sidebar Nova */
+.monitor-sidebar-new {
+  width: 340px; background: #ffffff; border-right: 1px solid #e2e8f0;
+  display: flex; flex-direction: column; z-index: 10;
+}
+.sidebar-stats-row { display: flex; gap: 12px; padding: 16px; border-bottom: 1px solid #f8fafc; }
+.sidebar-stat-box {
+  flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;
+  display: flex; align-items: center; gap: 10px; background: #fff;
+}
+.sidebar-stat-icon {
+  width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+}
+.sidebar-stat-icon.green { background: #eaf7ed; color: #28a745; }
+.sidebar-stat-icon.blue { background: #eff6ff; color: #3b82f6; }
+.sidebar-stat-info { font-size: 0.75rem; color: #64748b; line-height: 1.2; }
+.sidebar-stat-info strong { display: block; font-size: 1.1rem; color: #1e293b; margin-top: 2px; }
+
+.sidebar-search-area { padding: 12px 16px; }
+.sidebar-search-wrap { position: relative; }
+.sidebar-search-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.9rem; }
+.sidebar-search-wrap input {
+  width: 100%; padding: 10px 14px 10px 38px; border: none; border-radius: 8px;
+  background: #f4fbef; font-size: 0.85rem; color: #1e293b; outline: none; box-sizing: border-box;
+}
+
+.sidebar-filters-row { display: flex; gap: 8px; padding: 0 16px 12px; border-bottom: 1px solid #e2e8f0; }
+.btn-filter-pill {
+  flex: 1; padding: 6px 0; border: 1px solid #e2e8f0; border-radius: 20px; background: #fff;
+  color: #475569; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-filter-pill.active { background: #28a745; border-color: #28a745; color: #fff; }
+
+.sidebar-users-container { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.user-item-new {
+  display: flex; align-items: center; gap: 12px; padding: 12px; border: 2px solid transparent;
+  border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #fff;
+}
+.user-item-new:hover { background: #f8fafc; }
+.user-item-new.active { border-color: #28a745; background: #eaf7ed; }
+.user-item-avatar {
+  width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 700; flex-shrink: 0; overflow: hidden;
+}
+.user-item-avatar.geral { background: #fff; color: #e2e8f0; border: 2px solid #e2e8f0; }
+.user-item-new.active .user-item-avatar.geral { background: #fff; color: #28a745; border-color: #28a745; }
+.user-item-info { flex: 1; display: flex; flex-direction: column; }
+.user-item-info strong { font-size: 0.9rem; color: #1e293b; }
+.user-item-info span { font-size: 0.75rem; color: #28a745; margin-top: 2px; }
+
+/* Empty State da Busca */
+.sidebar-empty-state { text-align: center; padding: 40px 20px; color: #64748b; }
+.sidebar-empty-state i { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 12px; }
+.sidebar-empty-state strong { display: block; font-size: 0.9rem; color: #1e293b; margin-bottom: 4px; }
+.sidebar-empty-state span { font-size: 0.8rem; display: block; margin-bottom: 16px; }
+.btn-limpar-busca { padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+
+/* Main Area Nova */
+.monitor-main-content { flex: 1; display: flex; flex-direction: column; background: #fafafa; position: relative; }
+.main-chat-header {
+  display: flex; justify-content: space-between; align-items: center; padding: 20px 24px;
+  background: #fff; border-bottom: 1px solid #e2e8f0;
+}
+.main-chat-title-box { display: flex; align-items: center; gap: 12px; }
+.main-chat-icon {
+  width: 40px; height: 40px; border-radius: 50%; border: 2px solid #28a745; color: #28a745;
+  display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+.main-chat-title-box h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+.main-chat-title-box p { margin: 2px 0 0; font-size: 0.85rem; color: #28a745; }
+
+.chat-messages-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Empty State do Chat */
+.chat-empty-state { margin: auto; text-align: center; color: #28a745; }
+.chat-empty-state i { font-size: 4rem; color: #cbd5e1; margin-bottom: 16px; }
+.chat-empty-state p { font-size: 1rem; margin: 0; font-weight: 500; }
+
+/* Footer de Aviso */
+.monitor-warning-footer {
+  background: #fffbeb; padding: 12px 24px; border-top: 1px solid #fde68a;
+  display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #92400e; font-weight: 500;
+}
+
+/* Balões de Mensagem */
+.monitor-bubble-row { display: flex; width: 100%; margin-bottom: 8px; }
+.monitor-bubble-row.right { justify-content: flex-end; }
+.monitor-bubble-row.left { justify-content: flex-start; }
+.monitor-bubble { max-width: 75%; padding: 12px 16px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+.monitor-bubble-row.left .monitor-bubble { background: #ffffff; border: 1px solid #e2e8f0; border-top-left-radius: 4px; }
+.monitor-bubble-row.right .monitor-bubble { background: #eaf7ed; border: 1px solid #bbf7d0; border-top-right-radius: 4px; }
+.monitor-msg-nome { font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: #28a745; }
+.monitor-msg-texto { font-size: 0.95rem; color: #1e293b; line-height: 1.4; word-wrap: break-word; }
+.monitor-msg-hora { font-size: 0.7rem; color: #94a3b8; text-align: right; margin-top: 6px; }
+
+/* Submenu Acordeão */
+.monitor-sub-list-new {
+  margin: 0 12px 12px 42px; border-left: 2px solid #e2e8f0; padding-left: 10px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.monitor-sub-item-new {
+  padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; color: #475569;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;
+}
+.monitor-sub-item-new:hover { background: #f1f5f9; }
+.monitor-sub-item-new.active { background: #e2e8f0; color: #1e293b; font-weight: 600; }
+
+/* ── NOVO DESIGN: ABA DISTRIBUIR ── */
+.dist-container { padding: 24px; display: flex; flex-direction: column; gap: 30px; }
+
+/* Bloco Formulário de Distribuição */
+.dist-panel {
+  background: #ffffff;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.dist-panel-header {
+  background: #f4fbf6;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #166534;
+  font-size: 1.05rem;
+}
+.dist-panel-body { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+
+/* Filtro Banco */
+.dist-filter-box {
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 10px;
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dist-filter-left label { display: block; font-size: 0.85rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+.dist-filter-left select {
+  width: 320px; padding: 10px 14px; border: 1px solid #d8b4fe; border-radius: 6px;
+  background: #fdfbf7; color: #1e293b; font-size: 0.9rem; font-family: inherit; outline: none; cursor: pointer;
+}
+.dist-filter-right { display: flex; flex-direction: column; text-align: left; }
+.dist-filter-right strong { font-size: 0.9rem; color: #581c87; }
+.dist-filter-right span { font-size: 0.85rem; color: #7e22ce; margin-top: 4px; }
+
+/* Banner Azul Informativo */
+.dist-info-banner {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.dist-info-banner i { font-size: 1.8rem; color: #3b82f6; }
+.dist-info-banner div { display: flex; flex-direction: column; }
+.dist-info-banner strong { font-size: 1rem; color: #1e3a8a; }
+.dist-info-banner span { font-size: 0.85rem; color: #2563eb; margin-top: 4px; }
+
+/* Grid de Ações (3 Colunas) */
+.dist-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  align-items: flex-start;
+}
+.dist-action-col label { display: block; font-size: 0.85rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+.dist-action-col select, .dist-action-col input {
+  width: 100%; padding: 12px 14px; border: 1px solid #bbf7d0; border-radius: 6px;
+  background: #f0fdf4; color: #1e293b; font-size: 0.95rem; font-family: inherit; outline: none; box-sizing: border-box; cursor: pointer;
+}
+.dist-action-col input { cursor: text; }
+.dist-action-hint { display: block; font-size: 0.75rem; color: #166534; margin-top: 8px; }
+.dist-btn-confirm {
+  width: 100%; padding: 12px 14px; border: none; border-radius: 6px;
+  background: #74c991; color: #fff; font-size: 1rem; font-weight: 700;
+  display: flex; justify-content: center; align-items: center; gap: 10px;
+  cursor: pointer; transition: background 0.2s, opacity 0.2s; font-family: inherit; margin-top: 28px;
+}
+.dist-btn-confirm:hover:not(:disabled) { background: #5db77a; }
+.dist-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Lista de Vendedores Atuais */
+.dist-list-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
+.dist-list-container { display: flex; flex-direction: column; gap: 12px; }
+
+.vend-card-new {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.vend-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.vend-card-info { display: flex; align-items: center; gap: 12px; }
+.vend-avatar-new {
+  width: 42px; height: 42px; border-radius: 50%; background: #0ea5e9;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.1rem; font-weight: 700; flex-shrink: 0;
+}
+.vend-card-info-text { display: flex; flex-direction: column; }
+.vend-card-info-text strong { font-size: 1rem; color: #1e293b; }
+.vend-card-info-text span { font-size: 0.85rem; color: #059669; margin-top: 2px; }
+
+.vend-badge-new {
+  background: #eff6ff; color: #2563eb; padding: 6px 14px; border-radius: 20px;
+  font-size: 0.8rem; font-weight: 700;
+}
+
+.vend-card-ultimos { margin-top: 12px; }
+.vend-ultimos-label { font-size: 0.8rem; font-weight: 700; color: #059669; margin-bottom: 8px; }
+.vend-cliente-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.85rem; }
+.vend-cliente-row:not(:last-child) { border-bottom: 1px dashed #e2e8f0; }
+.vend-cliente-row span:first-child { color: #374151; }
+.vend-cliente-row span:last-child { color: #059669; font-family: monospace; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-content-inner">
+  <p style="color:#28a745; font-size:0.95rem; margin-top:-20px; margin-bottom:20px;">
+    Gestão e supervisão de vendedores
+  </p>
+
+  <div class="comunicado-card">
+    <div class="comunicado-header">
+      <div class="comunicado-icon">
+        <i class="fas fa-bullhorn"></i>
+      </div>
+      <h3>Criar Comunicado para a Equipe</h3>
+    </div>
+    <p class="comunicado-desc">Crie comunicados importantes que aparecerão para todos os vendedores na aba Comunicados</p>
+
+    <div class="comunicado-field">
+      <label class="form-field-label">Título do Comunicado <span>*</span></label>
+      <input type="text" class="comunicado-input" id="comunicadoTitulo"
+             placeholder="Ex: Nova Meta de Conversão - Março 2026" maxlength="100">
+    </div>
+
+    <div class="comunicado-field">
+      <label class="form-field-label">Tipo de Comunicado <span>*</span></label>
+      <select class="comunicado-select" id="comunicadoTipo">
+        <option value="informativo">📘 Informativo</option>
+        <option value="urgente">🔴 Urgente</option>
+        <option value="meta">🎯 Meta</option>
+        <option value="aviso">⚠️ Aviso</option>
+        <option value="parabenizacao">🏆 Parabenização</option>
+      </select>
+    </div>
+
+    <div class="comunicado-field">
+      <label class="form-field-label">Mensagem do Comunicado <span>*</span></label>
+      <textarea class="comunicado-textarea" id="comunicadoMensagem"
+                placeholder="Digite aqui a mensagem detalhada do comunicado..."
+                maxlength="500" rows="4"></textarea>
+      <div class="char-count"><span id="charCount">0</span>/500</div>
+    </div>
+
+    <div class="comunicado-footer">
+      <span class="aviso"><i class="fas fa-exclamation-triangle"></i> Todos os vendedores receberão este comunicado</span>
+      <button class="btn-criar-comunicado" id="btnCriarComunicado">
+        <i class="fas fa-paper-plane"></i> Criar Comunicado
+      </button>
+    </div>
+  </div>
+
+  <div class="leads-card" id="cardConfiguracoes">
+    <div class="leads-card-header">
+      <div class="leads-card-title">
+        <div class="leads-icon" style="background: #2563eb; color: #fff;">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <div>
+          <h3>Solicitações de Leads dos Vendedores</h3>
+          <p>Gerencie as solicitações de novos leads enviadas pelos vendedores</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center;">
+          <!-- Toggle Distribuição Automática -->
+          <div style="display:flex; align-items:center; gap:8px; background: #f8fafc; padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <span id="labelStatusAuto" style="font-size: 0.78rem; font-weight: 700; color: #64748b; white-space: nowrap;">DIST. AUTOMÁTICA</span>
+              <label class="switch">
+                  <input type="checkbox" id="toggleDistAuto" onchange="alternarDistAuto(this)">
+                  <span class="slider round"></span>
+              </label>
+          </div>
+          
+          <button class="btn-atualizar" onclick="carregarConfigDist()" id="btnAtualizarLeads">
+              <i class="fas fa-sync-alt"></i> Atualizar
+          </button>
+      </div>
+    </div>
+    
+    <div id="resumoDistAuto" style="padding: 15px 22px; background: #f0fdf4; border-top: 1px solid #dcfce7; display: none; align-items: center; justify-content: space-between;">
+        <div style="display:flex; align-items:center; gap:10px; color: #166534; font-size: 0.85rem;">
+            <i class="fas fa-magic"></i>
+            <span>Automação Ativa: <strong id="countVendedoresAuto">0</strong> vendedores recebendo <strong id="qtdVendedoresAuto">0</strong> leads por vez</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn-ver-detalhes" onclick="abrirModalConfigDistAuto()" style="font-size: 0.75rem; color: #059669; padding: 4px 8px; border: 1px solid #dcfce7; background: #fff;">
+                <i class="fas fa-cog"></i> Configurar
+            </button>
+            <button class="btn-aplicar-modern" id="btnRodarRoboAgora" onclick="rodarDistAutoAgora()" style="padding: 6px 12px; font-size: 0.75rem; gap: 4px;">
+                <i class="fas fa-robot"></i> Rodar Robô Agora
+            </button>
+        </div>
+    </div>
+    
+    <div id="solicitacoesContainer" style="padding: 15px; max-height: 400px; overflow-y: auto; background: var(--bg-main);">
+        <!-- Lista de solicitações ou mensagem de vazio -->
+        <div id="leadsEmptyArea" style="padding: 20px; text-align: center; color: #94a3b8; display: block;">
+            <i class="fas fa-user-clock" style="font-size: 1.5rem; margin-bottom: 8px; opacity: 0.5;"></i>
+            <p style="font-size: 0.85rem; margin: 0;">Nenhuma solicitação pendente no momento</p>
+        </div>
+        <div id="listaSolicitacoesPendentes" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+            <!-- Preenchido via JS -->
+        </div>
+    </div>
+
+    <!-- Formulário de Distribuição Manual unificado -->
+    <div style="padding: 20px; background: #f8fafc; border-top: 1px solid var(--border-color); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+        <div style="font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-hand-holding-medical" style="color: #3b82f6;"></i> DISTRIBUIÇÃO MANUAL DIRETA
+        </div>
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 1fr; gap: 10px; align-items: end;">
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b; font-weight: 600; display: block; margin-bottom: 5px;">Filtrar Base/Banco</label>
+                <select id="distBancoSelect" class="comunicado-input" style="padding: 8px; font-size: 0.85rem;" onchange="atualizarDisponiveisBanco()">
+                    <option value="">Todas as Bases</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b; font-weight: 600; display: block; margin-bottom: 5px;">Vendedor</label>
+                <select id="distVendedorSelect" class="comunicado-input" style="padding: 8px; font-size: 0.85rem;" onchange="atualizarBotaoDist()">
+                    <option value="">Escolha um vendedor...</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: #64748b; font-weight: 600; display: block; margin-bottom: 5px;">Quantidade</label>
+                <input type="number" id="distQtd" class="comunicado-input" style="padding: 8px; font-size: 0.85rem;" min="1" oninput="atualizarBotaoDist()">
+            </div>
+            <button id="btnDistribuir" class="btn-criar-comunicado" style="padding: 10px; font-size: 0.85rem; height: 38px; border-radius: 8px;" onclick="confirmarDistribuicao()">
+                <i class="fas fa-share-square"></i> <span id="btnDistText">Distribuir</span>
+            </button>
+        </div>
+        <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span id="distBaseCountLabel" style="font-size: 0.75rem; color: #94a3b8;">-- clientes disponíveis</span>
+            <span id="distQtdHint" style="font-size: 0.75rem; color: #3b82f6; font-weight: 600;"></span>
+        </div>
+    </div>
+  </div>
+
+  <div class="filter-section-modern">
+    <div class="filter-title-modern">
+      <i class="far fa-calendar-alt"></i> Filtrar Dados por Período
+    </div>
+    <div class="filter-row-modern">
+      <div class="filter-input-group">
+        <label>Data Início</label>
+        <div class="filter-input-wrapper">
+          <i class="far fa-calendar"></i>
+          <input type="date" id="filtroDataInicio">
+        </div>
+      </div>
+      <div class="filter-input-group">
+        <label>Data Fim</label>
+        <div class="filter-input-wrapper">
+          <i class="far fa-calendar"></i>
+          <input type="date" id="filtroDataFim">
+        </div>
+      </div>
+      <div class="filter-actions-modern">
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-secondary" id="btnLimparStats" style="margin-top: 15px; height: auto; padding: 10px 20px; font-size: 0.9rem;">Limpar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card-new card-orange">
+        <div class="stat-card-header">
+            <span class="stat-label">Clientes Pendentes</span>
+            <span class="stat-value" id="statPendentes">--</span>
+            <span style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">Aguardando distribuição</span>
+        </div>
+        <div class="stat-icon-box icon-orange"><i class="fas fa-clock"></i></div>
+    </div>
+    
+    <div class="stat-card-new card-purple">
+        <div class="stat-card-header">
+            <span class="stat-label">Já Atribuídos</span>
+            <span class="stat-value" id="statAtribuidos">--</span>
+            <span style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">Em trabalho pelos vendedores</span>
+        </div>
+        <div class="stat-icon-box icon-purple"><i class="fas fa-check-circle"></i></div>
+    </div>
+    
+    <div class="stat-card-new card-blue">
+        <div class="stat-card-header">
+            <span class="stat-label">Total de Clientes</span>
+            <span class="stat-value" id="statTotal">--</span>
+            <span style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">No sistema</span>
+        </div>
+        <div class="stat-icon-box icon-blue"><i class="fas fa-box"></i></div>
+    </div>
+    
+    <div class="stat-card-new card-green">
+        <div class="stat-card-header">
+            <span class="stat-label">Vendedores Ativos</span>
+            <span class="stat-value" id="statVendedoresAtivos">--</span>
+            <span style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">Disponíveis para trabalhar</span>
+        </div>
+        <div class="stat-icon-box icon-green"><i class="fas fa-user-tie"></i></div>
+    </div>
+  </div>
+
+  <div class="table-container" style="border-radius:12px; overflow:hidden;">
+    <div class="analise-subtabs" id="analiseTabs" style="margin-top: 0; background: #f1f5f9; padding: 5px; border-radius: 50px; display: flex; width: 100%; gap: 5px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+      <div role="button" class="tab-admin-item active" data-tab="desempenho" style="flex: 1; text-align: center; padding: 10px 15px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Desempenho</div>
+      <div role="button" class="tab-admin-item" data-tab="performance" style="flex: 1; text-align: center; padding: 10px 15px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+        <i class="fas fa-user-check"></i> Performance
+      </div>
+      <div role="button" class="tab-admin-item" data-tab="consultas" style="flex: 1; text-align: center; padding: 10px 15px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Consultas</div>
+      <div role="button" class="tab-admin-item" data-tab="usuarios" style="flex: 1; text-align: center; padding: 10px 15px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+        <i class="fas fa-users"></i> Usuários
+      </div>
+      <div role="button" class="tab-admin-item" data-tab="logs" style="flex: 1; text-align: center; padding: 10px 15px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+        <i class="fas fa-wave-square"></i> Logs
+      </div>
+    </div>
+
+    <div id="tabContent-desempenho" class="tab-content-section">
+      <div class="vendedor-search-bar">
+        <div class="search-input-wrap">
+          <i class="fas fa-search"></i>
+          <!-- Campo isca para capturar o autofill do navegador -->
+          <input type="text" style="display:none;" aria-hidden="true">
+          <input type="text" id="vendedorSearchInput" class="search-input" placeholder="Pesquisar vendedor..." autocomplete="new-password" spellcheck="false">
+        </div>
+      </div>
+      <table class="vendedor-table">
+        <thead>
+          <tr>
+            <th>Vendedor</th>
+            <th>Total Consultas</th>
+            <th>Elegíveis</th>
+            <th>Não Elegíveis</th>
+            <th>Taxa Conversão</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="vendedoresTableBody">
+          <tr>
+            <td colspan="6" style="text-align:center;padding:30px;color:#64748b;">
+              <i class="fas fa-spinner fa-spin"></i> Carregando desempenho...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="tabContent-distribuir" class="tab-content-section" style="display:none;">
+      <div class="dist-container">
+        
+        <div class="dist-panel">
+          <div class="dist-panel-header">
+            <i class="fas fa-user-plus"></i> Distribuir Clientes para Vendedores
+          </div>
+          
+          <div class="dist-panel-body">
+            
+            <div class="dist-filter-box">
+              <div class="dist-filter-left">
+                <label>Filtrar por Base / Banco</label>
+                <select id="distBancoSelect" onchange="atualizarDisponiveisBanco()">
+                  <option value="">Todas as Bases</option>
+                </select>
+              </div>
+              <div class="dist-filter-right">
+                <strong id="distBaseNameLabel">Base Selecionada: Todas</strong>
+                <span id="distBaseCountLabel">0 cliente(s) pendente(s) nesta base</span>
+              </div>
+            </div>
+
+            <div class="dist-info-banner">
+              <i class="fas fa-cube"></i>
+              <div>
+                <strong id="distBannerCount">0 clientes disponíveis para distribuição</strong>
+                <span>Selecione o vendedor e a quantidade de clientes que deseja atribuir</span>
+              </div>
+            </div>
+
+            <div class="dist-action-grid">
+              <div class="dist-action-col">
+                <label>1. Selecione o Vendedor</label>
+                <select id="distVendedorSelect" onchange="atualizarBotaoDist()">
+                  <option value="">Escolha um vendedor...</option>
+                </select>
+              </div>
+              
+              <div class="dist-action-col">
+                <label>2. Quantidade de Clientes</label>
+                <input type="number" id="distQtd" min="1" placeholder="10" oninput="atualizarBotaoDist()">
+                <span class="dist-action-hint" id="distQtdHint">Disponível para distribuição: 0 cliente(s)</span>
+              </div>
+              
+              <div class="dist-action-col" style="display: flex; align-items: flex-end;">
+                <button class="dist-btn-confirm" id="btnDistribuir" onclick="confirmarDistribuicao()" disabled>
+                  <i class="fas fa-arrow-right"></i> <span id="btnDistText">Distribuir Cliente(s)</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div>
+          <h4 class="dist-list-title">Distribuição Atual por Vendedor</h4>
+          <div class="dist-list-container" id="distTabelaVendedores">
+            </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="tabContent-performance" class="tab-content-section" style="display:none;">
+      <div class="ranking-perf-container">
+        <div class="ranking-perf-title">
+          <i class="fas fa-award"></i> Ranking de Vendedores
+        </div>
+        <div id="rankingPerformanceContainer">
+          <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Carregando ranking...</p></div>
+        </div>
+      </div>
+    </div>
+    <div id="tabContent-consultas" class="tab-content-section" style="display:none;">
+      <div class="consultas-search-container">
+        <div class="consultas-search-input-wrapper">
+          <i class="fas fa-search"></i>
+          <input type="text" id="consultasSearchInput" class="consultas-search-input" placeholder="Buscar por cliente, CPF, telefone ou vendedor..." oninput="carregarConsultasDebounced()">
+        </div>
+      </div>
+      <div class="consultas-table-container">
+        <table class="consultas-table">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Vendedor</th>
+              <th>Cliente</th>
+              <th>CPF</th>
+              <th>Banco</th>
+              <th>Margem</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="consultasTableBody">
+            <tr><td colspan="7" style="text-align:center; padding:40px; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Carregando histórico...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div id="tabContent-usuarios" class="tab-content-section" style="display:none;">
+      <div style="padding:20px;">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h3 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Gerenciamento de Usuários</h3>
+          <button onclick="abrirModalNovoUsuario()"
+            style="display:flex;align-items:center;gap:8px;padding:9px 18px;background:#28a745;
+                   color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;
+                   cursor:pointer;font-family:inherit;">
+            <i class="fas fa-user-plus"></i> Novo Usuário
+          </button>
+        </div>
+
+        <div id="listaUsuarios" style="display:flex;flex-direction:column;gap:12px;"></div>
+
+      </div>
+
+      <div id="modalNovoUsuario" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);
+           z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:14px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+          <h3 id="modalUsuarioTitulo" style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 20px;">Novo Usuário</h3>
+          <input type="hidden" id="nuId" value="">
+          <div style="display:flex;flex-direction:column;gap:15px;">
+            <div class="field-group">
+              <label class="modal-label" style="margin-bottom:5px; display:block;">Nome Completo</label>
+              <input id="nuNome" placeholder="Ex: João Silva" style="width:100%; padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none; box-sizing:border-box;">
+            </div>
+            
+            <div class="field-group">
+              <label class="modal-label" style="margin-bottom:5px; display:block;">Usuário / Login</label>
+              <input id="nuUsername" placeholder="Ex: joao.silva" style="width:100%; padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none; box-sizing:border-box;">
+            </div>
+
+            <div class="field-group">
+              <label class="modal-label" style="margin-bottom:5px; display:block;">Senha</label>
+              <div style="position:relative; display:flex; align-items:center;">
+                <input id="nuSenha" type="password" placeholder="Senha" style="width:100%; padding:10px 35px 10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none; box-sizing:border-box;">
+                <button type="button" onclick="toggleSenhaVisibility()" style="position:absolute; right:10px; background:none; border:none; color:#94a3b8; cursor:pointer; font-size:0.9rem;">
+                  <i class="fas fa-eye" id="eyeIconNuSenha"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label class="modal-label" style="margin-bottom:5px; display:block;">Papel / Perfil</label>
+              <select id="nuPapel" style="width:100%; padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none; background:#fff; box-sizing:border-box;">
+                <option value="vendedor">Vendedor</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+            <button onclick="fecharModalNovoUsuario()"
+              style="padding:9px 18px;background:#f1f5f9;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;font-family:inherit;">
+              Cancelar
+            </button>
+            <button id="btnSalvarUsuario" onclick="salvarUsuario()"
+              style="padding:9px 18px;background:#28a745;color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;">
+              Criar Usuário
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tabContent-logs" class="tab-content-section" style="display:none;">
+      <div style="padding:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h3 style="font-size:1.1rem;font-weight:800;color:#1e293b;margin:0;"><i class="fas fa-shield-alt" style="color:#3b82f6; margin-right:8px;"></i> Logs de Auditoria e Acessos</h3>
+        </div>
+
+        <div class="filter-section-modern">
+            <div class="filter-title-modern">
+                <i class="fas fa-filter" style="color: #3b82f6;"></i> Filtros Avançados
+            </div>
+            <div class="filter-row-modern">
+                <div class="filter-input-group">
+                    <label>Data Inicial</label>
+                    <div class="filter-input-wrapper">
+                        <i class="far fa-calendar-alt"></i>
+                        <input type="date" id="logFiltroInicio" onchange="carregarLogs()">
+                    </div>
+                </div>
+                <div class="filter-input-group">
+                    <label>Data Final</label>
+                    <div class="filter-input-wrapper">
+                        <i class="far fa-calendar-check"></i>
+                        <input type="date" id="logFiltroFim" onchange="carregarLogs()">
+                    </div>
+                </div>
+                <div class="filter-input-group" style="flex: 2;">
+                    <label>Usuário Específico</label>
+                    <div class="filter-input-wrapper">
+                        <i class="fas fa-user-tag"></i>
+                        <input type="text" id="logFiltroUsuario" placeholder="Nome ou login..." oninput="carregarLogsDebounced()">
+                    </div>
+                </div>
+                <div class="filter-input-group" style="flex: 2;">
+                    <label>Filtrar por Ação</label>
+                    <div class="filter-input-wrapper">
+                        <i class="fas fa-bolt"></i>
+                        <input type="text" id="logFiltroAcao" placeholder="Ex: Login, Excluiu..." oninput="carregarLogsDebounced()">
+                    </div>
+                </div>
+                <div class="filter-actions-modern" style="align-items: flex-end; display: flex; padding-bottom: 2px;">
+                    <button class="btn-limpar-modern" onclick="limparFiltrosLogs()" title="Limpar Filtros"><i class="fas fa-eraser"></i></button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container" style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;">
+            <thead>
+              <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                <th style="padding:12px 16px; color:#64748b; font-weight:600;">Data/Hora</th>
+                <th style="padding:12px 16px; color:#64748b; font-weight:600;">Usuário</th>
+                <th style="padding:12px 16px; color:#64748b; font-weight:600;">Ação</th>
+                <th style="padding:12px 16px; color:#64748b; font-weight:600;">Detalhes</th>
+                <th style="padding:12px 16px; color:#64748b; font-weight:600;">IP / Localização</th>
+              </tr>
+            </thead>
+            <tbody id="listaLogs">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="logsPagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+            <div style="font-size:0.85rem; color:#64748b;" id="logsTotalInfo">Mostrando 0 registros</div>
+            <div style="display:flex; gap:8px;">
+                <button id="btnLogPrev" onclick="carregarLogs(currentLogPage - 1)" style="padding:6px 16px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-weight:600; color:#475569; transition:all 0.2s;" disabled>Anterior</button>
+                <button id="btnLogNext" onclick="carregarLogs(currentLogPage + 1)" style="padding:6px 16px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-weight:600; color:#475569; transition:all 0.2s;" disabled>Próxima</button>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modalImportar">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModalImportar()"><i class="fas fa-times"></i></button>
+    <h2 class="modal-title">Importar Planilha Excel</h2>
+    <p class="modal-subtitle">
+      Faça upload de uma planilha Excel (.xlsx, .xls) com os dados dos clientes.
+      Os campos obrigatórios são: <strong>NOME, CPF, pelo menos um TELEFONE e MARGEM</strong>.
+      Os demais campos são opcionais.
+    </p>
+
+    <label class="modal-label">Banco / Base de Dados <span style="color:#ef4444;">*</span></label>
+    <select class="modal-select" id="modalBancoSelect">
+      <option value="">Selecione o banco desta importação...</option>
+    </select>
+    <p class="modal-hint">Escolha o banco para organizar e filtrar os clientes por base</p>
+
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <i class="fas fa-file-spreadsheet">&#xf1c3;</i>
+      <div class="upload-cta"><span>Clique para selecionar</span> ou arraste o arquivo aqui</div>
+      <div class="upload-fmt">Formatos suportados: .xlsx, .xls</div>
+      <div class="upload-filename" id="uploadFilename" style="display:none;"></div>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
+
+    <div class="modal-warn" id="modalWarn">
+      <i class="fas fa-exclamation-triangle"></i>
+      Selecione um banco antes de fazer o upload
+    </div>
+
+    <div class="modal-info">
+      <strong>🟥 Campos Obrigatórios:</strong>
+      <ul>
+        <li><strong>NOME</strong> - Nome completo do cliente</li>
+        <li><strong>CPF</strong> - CPF no formato 000.000.000-00</li>
+        <li><strong>TELEFONE1</strong> - Telefone principal com DDD</li>
+        <li>TELEFONE2, TELEFONE3, TELEFONE4 - (opcionais, até 4 números)</li>
+        <li><strong>MARGEM</strong> - Valor da margem disponível</li>
+      </ul>
+      <strong style="display:block; margin-top:10px; color:#64748b;">&#128309; Campos Opcionais:</strong>
+      <ul style="color:#64748b;">
+        <li>WHATSAPP - "Sim" ou "Não" se tem WhatsApp</li>
+        <li>SEXO - Masculino / Feminino</li>
+        <li>IDADE - Idade em anos</li>
+        <li>RUA, BAIRRO, CEP, CIDADE, ESTADO - Endereço</li>
+      </ul>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="fecharModalImportar()">Cancelar</button>
+      <button class="btn-modal-import" id="btnConfirmarImport" disabled>
+        <i class="fas fa-file-upload"></i> Importar Dados
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="monitor-overlay" id="monitorOverlay">
+  <div class="monitor-box-new">
+    
+    <div class="monitor-topbar">
+      <div class="monitor-topbar-left">
+        <button class="monitor-back-btn" id="btnFecharMonitor"><i class="fas fa-arrow-left"></i></button>
+        <div class="monitor-topbar-title">
+          <i class="far fa-comment-dots"></i>
+          <div>
+            <h2>Monitor de Chat dos Vendedores</h2>
+            <p>Monitore e analise as conversas da equipe em tempo real</p>
+          </div>
+        </div>
+      </div>
+      <div class="monitor-topbar-stats">
+        <span class="monitor-top-badge"><i class="fas fa-bolt"></i> <span id="monitorOnlineCount">0</span> Ativos</span>
+        <span class="monitor-top-badge"><i class="far fa-comment-dots"></i> <span id="monitorGlobalMsgsCount">0</span> Mensagens</span>
+      </div>
+    </div>
+
+    <div class="monitor-body">
+      
+      <div class="monitor-sidebar-new">
+        <div class="sidebar-stats-row">
+          <div class="sidebar-stat-box">
+            <div class="sidebar-stat-icon green"><i class="far fa-user"></i></div>
+            <div class="sidebar-stat-info">Vendedores<br><strong id="totalVendedoresSide">0</strong></div>
+          </div>
+          <div class="sidebar-stat-box">
+            <div class="sidebar-stat-icon blue"><i class="fas fa-chart-bar"></i></div>
+            <div class="sidebar-stat-info">Média<br><strong id="mediaMsgsSide">0</strong></div>
+          </div>
+        </div>
+        
+        <div class="sidebar-search-area">
+          <div class="sidebar-search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" id="buscaMonitor" placeholder="Buscar vendedor...">
+          </div>
+        </div>
+
+        <div class="sidebar-filters-row" id="monitorFiltrosContainer">
+          <button class="btn-filter-pill active" data-filter="todos">Todos</button>
+          <button class="btn-filter-pill" data-filter="ativos">Online</button>
+          <button class="btn-filter-pill" data-filter="inativos">Offline</button>
+        </div>
+
+        <div class="sidebar-users-container" id="monitorUserList">
+          <div style="text-align:center;padding:20px;color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+      </div>
+
+      <div class="monitor-main-content">
+        <div class="main-chat-header">
+          <div class="main-chat-title-box">
+            <div class="main-chat-icon"><i class="far fa-comment"></i></div>
+            <div>
+              <h3 id="monitorMainTitle">Todas as Mensagens</h3>
+              <p id="monitorSubTitle">Visualizando 0 mensagens</p>
+            </div>
+          </div>
+          <div class="monitor-top-badge">
+            <i class="far fa-eye"></i> <span id="chatLocalMsgsCount">0</span> mensagens
+          </div>
+        </div>
+
+        <div class="chat-messages-area" id="monitorMsgs">
+          </div>
+
+        <div class="monitor-warning-footer">
+          <i class="far fa-eye"></i> Modo de monitoramento - Você está visualizando as mensagens sem participar da conversa
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Configuração Distribuição Automática -->
+<div class="modal-overlay" id="modalConfigDistAuto" style="z-index: 10001; background: rgba(15, 23, 42, 0.8);">
+    <div class="modal-box" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid var(--border-color); background: var(--bg-panel);">
+        <div style="padding: 25px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <h2 class="modal-title" style="margin:0; font-size: 1.25rem; font-weight: 700; color: var(--text-main);">
+                    <i class="fas fa-magic" style="color:#8b5cf6; margin-right:8px;"></i>Configurar Distribuição
+                </h2>
+                <button class="modal-close" onclick="fecharModalConfigDistAuto()" style="position:static; background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1.2rem;"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="modal-subtitle" style="margin:0; font-size: 0.85rem; color: #64748b;">Selecione os vendedores e a quantidade de leads por clique.</p>
+        </div>
+
+        <div style="padding: 25px; background: var(--bg-main); max-height: 400px; overflow-y: auto;">
+            <div class="comunicado-field" style="margin-bottom: 20px;">
+                <label class="form-field-label">Banco / Base de Dados (Opcional)</label>
+                <select id="modalAutoDistBanco" class="comunicado-input" style="padding: 8px;">
+                    <option value="">Todos os Bancos / Bases</option>
+                </select>
+                <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">Se selecionado, a distribuição automática só ocorrerá para leads desta base.</p>
+            </div>
+
+            <div class="comunicado-field" style="margin-bottom: 25px;">
+                <label class="form-field-label">Quantidade de Leads por Solicitação</label>
+                <input type="number" id="modalAutoDistQtd" class="comunicado-input" value="10" min="1" max="100">
+                <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">Quantos leads o sistema entrega cada vez para cada vendedor.</p>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                <label class="form-field-label" style="margin:0;">Vendedores Habilitados</label>
+                <label style="display:flex; align-items:center; gap:6px; font-size: 0.8rem; color: #3b82f6; cursor:pointer; font-weight: 600;">
+                    <input type="checkbox" id="checkSelecionarTodosVendedores" onchange="toggleSelecionarTodosVendedores(this)">
+                    Selecionar Todos
+                </label>
+            </div>
+            <div id="modalAutoDistVendedoresList" style="display:grid; grid-template-columns: 1fr; gap: 8px;">
+                <!-- Lista preenchida via JS -->
+                <div style="text-align:center; padding:20px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Carregando vendedores...</div>
+            </div>
+        </div>
+
+        <div style="padding: 20px 25px; background: var(--bg-panel); border-top: 1px solid var(--border-color); display:flex; justify-content:flex-end; gap:12px;">
+            <button class="btn-limpar-modern" onclick="fecharModalConfigDistAuto()" style="padding: 8px 16px;">Cancelar</button>
+            <button class="btn-criar-comunicado" onclick="salvarConfiguracaoAvancadaDist()" style="padding: 8px 20px;">
+                <i class="fas fa-save"></i> Salvar Configurações
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.vendedor-check-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.vendedor-check-item:hover { border-color: #8b5cf6; background: #f5f3ff; }
+.theme-dark .vendedor-check-item:hover { background: #1e1b4b; }
+.vendedor-check-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.vendedor-check-item .v-info { display: flex; flex-direction: column; }
+.vendedor-check-item .v-info strong { font-size: 0.9rem; color: var(--text-main); }
+.vendedor-check-item .v-info span { font-size: 0.75rem; color: #64748b; }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // --- Monitor de Chat ---
+  const monitorOverlay = document.getElementById('monitorOverlay');
+  const btnMonitorChat = document.getElementById('btnMonitorChat');
+  const btnFecharMonitor = document.getElementById('btnFecharMonitor');
+  let socketMonitor = null;
+
+  btnMonitorChat.addEventListener('click', () => {
+    monitorOverlay.classList.add('open');
+    if (!socketMonitor) iniciarMonitorChat();
+  });
+
+  btnFecharMonitor.addEventListener('click', () => {
+    monitorOverlay.classList.remove('open');
+  });
+
+  monitorOverlay.addEventListener('click', e => {
+    if (e.target === monitorOverlay) monitorOverlay.classList.remove('open');
+  });
+
+  function iniciarMonitorChat() {
+    const ME = '{{ session.get("user", "") }}';
+    socketMonitor = io({ transports: ['websocket', 'polling'] });
+    const msgsContainer = document.getElementById('monitorMsgs');
+    const userList = document.getElementById('monitorUserList');
+    const mainTitle = document.getElementById('monitorMainTitle');
+    const subTitle = document.getElementById('monitorSubTitle');
+    
+    let lastMonitorData = [];
+    let currentMonitorOffset = 0;
+    let monitorHasMore = true;
+    let keepScrollBottom = true;
+    
+    // Estado atual
+    let alvoAtual = 'geral'; 
+    let chatAtual = ''; 
+    let todosUsuarios = [];
+    let usuariosOnline = []; 
+    let conversasAtuais = new Set();
+    
+    function getInitials(nome) {
+      const p = nome.trim().split(' ');
+      return p.length >= 2 ? (p[0][0] + p[p.length-1][0]).toUpperCase() : nome.slice(0,2).toUpperCase();
+    }
+
+    function atualizarContadoresFiltro() {
+      const total = todosUsuarios.length;
+      // Garante que o próprio usuário sempre conte como Ativo
+      const ativos = todosUsuarios.filter(u => (u.username === ME) || usuariosOnline.includes(u.username)).length;
+      const inativos = total - ativos;
+
+      const btnTodos = document.querySelector('.btn-filter-pill[data-filter="todos"]');
+      const btnAtivos = document.querySelector('.btn-filter-pill[data-filter="ativos"]');
+      const btnInativos = document.querySelector('.btn-filter-pill[data-filter="inativos"]');
+
+      if (btnTodos) btnTodos.textContent = `Todos (${total})`;
+      if (btnAtivos) btnAtivos.textContent = `Online (${ativos})`;
+      if (btnInativos) btnInativos.textContent = `Offline (${inativos})`;
+    }
+
+    // Filtros de busca
+    const buscaInput = document.getElementById('buscaMonitor');
+    buscaInput.addEventListener('input', renderUserList);
+    
+    const filterBtns = document.querySelectorAll('.btn-filter-pill');
+    let filtroStatusAtual = 'todos';
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filtroStatusAtual = btn.getAttribute('data-filter');
+            renderUserList();
+        });
+    });
+
+    window.limparFiltrosMonitor = function() {
+        buscaInput.value = '';
+        filterBtns[0].click(); // Volta para 'todos'
+    };
+    
+    function renderUserList() {
+      const termo = buscaInput.value.toLowerCase();
+      let html = '';
+      let encontrou = false;
+
+      // Card Geral (Todos os Vendedores)
+      if ("todos os vendedores".includes(termo) && (filtroStatusAtual === 'todos')) {
+          encontrou = true;
+          const isActive = (alvoAtual === 'geral');
+          const totalMsgs = alvoAtual === 'geral' ? lastMonitorData.length : 0;
+          
+          html += `
+          <div class="user-item-new ${isActive ? 'active' : ''}" onclick="selectAlvo('geral', 'Todos os Vendedores')">
+            <div class="user-item-avatar geral"><i class="far fa-comment"></i></div>
+            <div class="user-item-info">
+              <strong>Todos os Vendedores</strong>
+              <span>${isActive ? totalMsgs : '0'} mensagens totais</span>
+            </div>
+          </div>`;
+          
+          // Sub-lista para o Geral se estiver ativo
+          if (isActive && conversasAtuais.size > 0) {
+             html += `<div class="monitor-sub-list-new">`;
+             html += `<div class="monitor-sub-item-new ${!chatAtual ? 'active' : ''}" onclick="selectChat('', 'Todas as mensagens'); event.stopPropagation();">
+                        <i class="fas fa-layer-group"></i> Todas as mensagens
+                      </div>`;
+             conversasAtuais.forEach(c => {
+                 if (c !== 'geral') {
+                     const cUser = todosUsuarios.find(x => x.username === c);
+                     const cNome = cUser ? cUser.nome : c.split('@')[0];
+                     html += `<div class="monitor-sub-item-new ${chatAtual === c ? 'active' : ''}" onclick="selectChat('${c}', 'Chat com ${cNome}'); event.stopPropagation();">
+                                <i class="far fa-comment-dots"></i> ${cNome}
+                              </div>`;
+                 }
+             });
+             html += `</div>`;
+          }
+      }
+      
+      todosUsuarios.forEach(u => {
+        // Considera ativo quem está no socket OU o próprio admin que visualiza a página
+        const isOnline = (u.username === ME) || usuariosOnline.includes(u.username);
+        
+        if (filtroStatusAtual === 'ativos' && !isOnline) return;
+        if (filtroStatusAtual === 'inativos' && isOnline) return;
+        if (termo && !u.nome.toLowerCase().includes(termo) && !u.username.toLowerCase().includes(termo)) return;
+        
+        encontrou = true;
+        const isActive = (alvoAtual === u.username);
+        
+        let fotoUrl = u.foto;
+        if (!fotoUrl && u.username === ME) fotoUrl = localStorage.getItem('userPhoto_' + ME) || '';
+        const imgHtml = fotoUrl ? `<img src="${fotoUrl}" style="width:100%;height:100%;object-fit:cover;">` : getInitials(u.nome || u.username);
+        
+        const styleAvatar = isOnline ? 'border: 2px solid #28a745;' : 'border: 2px solid transparent; background: #e2e8f0; color: #64748b;';
+
+        html += `
+        <div class="user-item-new ${isActive ? 'active' : ''}" onclick="selectAlvo('${u.username}', '${u.nome || u.username}')">
+          <div class="user-item-avatar" style="${styleAvatar}">${imgHtml}</div>
+          <div class="user-item-info">
+            <strong>${u.nome || u.username}</strong>
+            <span style="color: ${isOnline ? '#28a745' : '#94a3b8'}">${isOnline ? 'Online agora' : 'Offline'}</span>
+          </div>
+        </div>`;
+
+        if (isActive && conversasAtuais.size > 0) {
+           html += `<div class="monitor-sub-list-new">`;
+           html += `<div class="monitor-sub-item-new ${!chatAtual ? 'active' : ''}" onclick="selectChat('', 'Todas as mensagens'); event.stopPropagation();">
+                      <i class="fas fa-layer-group"></i> Todas as mensagens
+                    </div>`;
+           conversasAtuais.forEach(c => {
+               if (c !== 'geral') {
+                   const cUser = todosUsuarios.find(x => x.username === c);
+                   const cNome = cUser ? cUser.nome : c.split('@')[0];
+                   html += `<div class="monitor-sub-item-new ${chatAtual === c ? 'active' : ''}" onclick="selectChat('${c}', 'Chat com ${cNome}'); event.stopPropagation();">
+                              <i class="far fa-comment-dots"></i> ${cNome}
+                            </div>`;
+               }
+           });
+           html += `</div>`;
+        }
+      });
+      
+      // Empty State
+      if (!encontrou) {
+          html = `
+          <div class="sidebar-empty-state">
+             <i class="fas fa-search"></i>
+             <strong>Nenhum vendedor encontrado</strong>
+             <span>Nenhum vendedor corresponde aos filtros</span>
+             <button class="btn-limpar-busca" onclick="limparFiltrosMonitor()" style="margin-top:10px;">Limpar filtros</button>
+          </div>`;
+      }
+      
+      userList.innerHTML = html;
+      
+      // Atualiza estastisticas da sidebar
+      document.getElementById('totalVendedoresSide').textContent = todosUsuarios.length;
+      document.getElementById('mediaMsgsSide').textContent = todosUsuarios.length > 0 ? Math.floor(lastMonitorData.length / todosUsuarios.length) : 0;
+    }
+
+    // Carrega usuários
+    fetch('/api/usuarios').then(r => r.json()).then(d => {
+      if (d.success) {
+        todosUsuarios = d.usuarios;
+        renderUserList();
+        atualizarContadoresFiltro();
+      }
+    });
+
+    window.selectAlvo = function(username, nome) {
+      if (alvoAtual === username) return;
+      alvoAtual = username;
+      chatAtual = '';
+      currentMonitorOffset = 0;
+      monitorHasMore = true;
+      keepScrollBottom = true;
+      conversasAtuais.clear();
+      
+      mainTitle.textContent = nome === 'Todos os Vendedores' ? 'Todas as Mensagens' : `Mensagens de ${nome}`;
+      subTitle.textContent = "Visualizando 0 mensagens";
+      
+      renderUserList(); 
+      
+      msgsContainer.innerHTML = '<div style="text-align:center;color:#64748b;margin-top:20px;font-size:0.85rem;"><i class="fas fa-spinner fa-spin"></i> Carregando histórico...</div>';
+      
+      if (alvoAtual === 'geral') {
+        socketMonitor.emit('join_chat'); 
+      } else {
+        socketMonitor.emit('monitor_request_history', { username: alvoAtual, offset: 0 });
+      }
+    };
+
+    socketMonitor.on('connect', () => {
+      socketMonitor.emit('join_chat');
+      selectAlvo('geral', 'Todos os Vendedores'); 
+    });
+
+    socketMonitor.on('distribuicao_leads', (data) => {
+        // Quando leads são distribuídos (pelo robô ou manual), atualiza os cards do admin
+        if (typeof atualizarTudo === 'function') {
+            atualizarTudo();
+        }
+    });
+
+    socketMonitor.on('atualizar_dashboard', (data) => {
+        // Quando uma tabulação é feita, atualiza os dados de performance
+        if (typeof atualizarTudo === 'function') {
+            atualizarTudo();
+        }
+    });
+
+    socketMonitor.on('historico_chat', (data) => {
+      if (alvoAtual !== 'geral') return;
+      lastMonitorData = data.mensagens || [];
+      renderAll(lastMonitorData);
+      
+      if(data.usuarios_online_dict) {
+         usuariosOnline = Object.keys(data.usuarios_online_dict);
+      }
+      atualizarMonitorOnline(usuariosOnline.length);
+      renderUserList();
+    });
+    
+    function atualizarConversasAcordeao(msgs) {
+      const conversas = new Set();
+      msgs.forEach(m => {
+        if (m.destinatario !== alvoAtual && m.destinatario !== 'geral') conversas.add(m.destinatario);
+        if (m.remetente !== alvoAtual && m.remetente !== 'geral') conversas.add(m.remetente);
+        if (m.destinatario === 'geral') conversas.add('geral');
+      });
+      
+      if (conversas.size !== conversasAtuais.size || [...conversas].some(x => !conversasAtuais.has(x))) {
+          conversasAtuais = conversas;
+          renderUserList();
+      }
+    }
+
+    socketMonitor.on('monitor_historico', (data) => {
+      if (alvoAtual !== data.alvo) return;
+      const msgs = data.mensagens || [];
+      if (data.offset === 0) {
+        lastMonitorData = msgs;
+      } else {
+        lastMonitorData = msgs.concat(lastMonitorData);
+        keepScrollBottom = false;
+      }
+      
+      monitorHasMore = (msgs.length >= 100);
+      atualizarConversasAcordeao(lastMonitorData);
+      renderAll(lastMonitorData);
+    });
+    
+    function renderAll(mensagens) {
+      const scrollPosBefore = msgsContainer.scrollHeight - msgsContainer.scrollTop;
+      msgsContainer.innerHTML = '';
+      
+      if (monitorHasMore && mensagens.length > 0 && alvoAtual !== 'geral') {
+         const btn = document.createElement('button');
+         btn.textContent = "Carregar mensagens mais antigas";
+         btn.style.cssText = "background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:6px 14px;font-size:0.8rem;color:#475569;margin:0 auto 16px;cursor:pointer;display:block;";
+         btn.onclick = () => {
+            currentMonitorOffset += 100;
+            socketMonitor.emit('monitor_request_history', { username: alvoAtual, offset: currentMonitorOffset });
+            btn.textContent = "Carregando...";
+            btn.disabled = true;
+         };
+         msgsContainer.appendChild(btn);
+      }
+      
+      let msgsToRender = mensagens;
+      if (alvoAtual !== 'geral' && chatAtual) {
+        msgsToRender = msgsToRender.filter(m => {
+          if (chatAtual === 'geral') return m.destinatario === 'geral';
+          return (m.remetente === chatAtual || m.destinatario === chatAtual);
+        });
+      }
+      
+      // Atualiza contadores
+      document.getElementById('monitorGlobalMsgsCount').textContent = lastMonitorData.length;
+      document.getElementById('chatLocalMsgsCount').textContent = msgsToRender.length;
+      subTitle.textContent = `Visualizando ${msgsToRender.length} mensagens`;
+      
+      if (msgsToRender && msgsToRender.length > 0) {
+        msgsToRender.forEach(m => renderMonitorMsg(m, false));
+      } else if (mensagens.length === 0 || msgsToRender.length === 0) {
+        msgsContainer.innerHTML = `
+        <div class="chat-empty-state">
+           <i class="far fa-comment"></i>
+           <p>Nenhuma mensagem no chat ainda</p>
+        </div>`;
+      }
+      
+      if (keepScrollBottom) { scrollMonitor(); } 
+      else { msgsContainer.scrollTop = msgsContainer.scrollHeight - scrollPosBefore; }
+      keepScrollBottom = true;
+    }
+
+    socketMonitor.on('nova_mensagem', (msg) => {
+      if (alvoAtual === 'geral') {
+        if (msg.destinatario !== 'geral') return;
+      } else {
+        if (msg.remetente !== alvoAtual && msg.destinatario !== alvoAtual) return;
+      }
+      
+      if (alvoAtual !== 'geral') {
+        lastMonitorData.push(msg);
+        atualizarConversasAcordeao(lastMonitorData);
+      } else {
+        lastMonitorData.push(msg);
+      }
+      
+      if (alvoAtual !== 'geral' && chatAtual) {
+        let ok = false;
+        if (chatAtual === 'geral' && msg.destinatario === 'geral') ok = true;
+        if (chatAtual !== 'geral' && (msg.remetente === chatAtual || msg.destinatario === chatAtual)) ok = true;
+        if (!ok) return; 
+      }
+      
+      if (msgsContainer.querySelector('.chat-empty-state')) msgsContainer.innerHTML = '';
+      renderMonitorMsg(msg, true);
+      scrollMonitor();
+      
+      document.getElementById('monitorGlobalMsgsCount').textContent = lastMonitorData.length;
+      document.getElementById('chatLocalMsgsCount').textContent = parseInt(document.getElementById('chatLocalMsgsCount').textContent) + 1;
+      subTitle.textContent = `Visualizando ${document.getElementById('chatLocalMsgsCount').textContent} mensagens`;
+      renderUserList(); 
+    });
+
+    socketMonitor.on('usuario_online', (data) => {
+      if(data.usuarios) usuariosOnline = data.usuarios;
+      atualizarMonitorOnline(usuariosOnline.length);
+      renderUserList(); 
+    });
+
+    socketMonitor.on('usuario_offline', (data) => {
+      if(data.usuarios) usuariosOnline = data.usuarios;
+      atualizarMonitorOnline(usuariosOnline.length);
+      renderUserList();
+    });
+
+    function renderMonitorMsg(msg, animar) {
+      const ME = '{{ session.get("user", "") }}';
+      let isRight = false;
+      let titulo = msg.nome;
+
+      if (alvoAtual === 'geral') {
+        isRight = (msg.remetente === ME);
+        titulo = msg.nome + ' (Canal Geral)';
+      } else {
+        isRight = (msg.remetente === alvoAtual);
+        if (msg.remetente === alvoAtual) {
+          let destLabel = msg.destinatario === 'geral' ? 'Canal Geral' : msg.destinatario.split('@')[0];
+          titulo = msg.nome + ' ➔ ' + destLabel;
+        } else {
+          titulo = msg.nome + ' ➔ ' + alvoAtual.split('@')[0];
+        }
+      }
+      
+      const el = document.createElement('div');
+      el.className = 'monitor-bubble-row ' + (isRight ? 'right' : 'left');
+      if (animar) el.style.animation = 'fadeIn 0.2s ease';
+
+      el.innerHTML = `
+        <div class="monitor-bubble">
+          <div class="monitor-msg-nome">${titulo}</div>
+          <div class="monitor-msg-texto">${escapeHtml(msg.mensagem)}</div>
+          <div class="monitor-msg-hora">${msg.data} ${msg.hora}</div>
+        </div>
+      `;
+      msgsContainer.appendChild(el);
+    }
+
+    function atualizarMonitorOnline(qtd) {
+      document.getElementById('monitorOnlineCount').textContent = qtd;
+      atualizarContadoresFiltro();
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                        .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+    }
+
+    function scrollMonitor() {
+      msgsContainer.scrollTop = msgsContainer.scrollHeight;
+    }
+  }
+
+  // --- Sub-tabs ---
+  const tabBtns = document.querySelectorAll('.tab-admin-item');
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = btn.getAttribute('data-tab');
+      
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      document.querySelectorAll('.tab-content-section').forEach(s => s.style.display = 'none');
+      const content = document.getElementById('tabContent-' + target);
+      if (content) content.style.display = 'block';
+      
+      const searchInput = document.getElementById('vendedorSearchInput');
+      if (searchInput) searchInput.value = '';
+      
+      if (target === 'desempenho') {
+          carregarDesempenho();
+          carregarDadosDistribuir();
+      }
+      if (target === 'performance') carregarRankingPerformance();
+      if (target === 'consultas') carregarConsultas();
+      if (target === 'usuarios') carregarUsuarios();
+      if (target === 'logs') carregarLogs();
+    });
+  });
+
+  // Inicialização: Abre a aba de desempenho por padrão
+  document.getElementById('tabContent-desempenho').style.display = 'block';
+  carregarDesempenho();
+  carregarDadosDistribuir(); // Carrega bancos e vendedores para a distribuição manual
+
+  // --- Filtro de Datas Automático ---
+  const dataIni = document.getElementById('filtroDataInicio');
+  const dataFim = document.getElementById('filtroDataFim');
+
+  function atualizarTudo() {
+      carregarStats();
+      carregarDesempenho();
+      if (typeof carregarDadosDistribuir === 'function') carregarDadosDistribuir();
+      if (typeof carregarSolicitacoes === 'function') carregarSolicitacoes();
+  }
+  window.atualizarTudo = atualizarTudo;
+
+  if(dataIni) dataIni.addEventListener('change', atualizarTudo);
+  if(dataFim) dataFim.addEventListener('change', atualizarTudo);
+
+  const btnLimparStats = document.getElementById('btnLimparStats');
+  if(btnLimparStats) {
+      btnLimparStats.addEventListener('click', () => {
+          if(dataIni) dataIni.value = '';
+          if(dataFim) dataFim.value = '';
+          atualizarTudo();
+      });
+  }
+
+  // --- Stats Dinâmicos ---
+  function carregarStats() {
+    const valorInicio = dataIni ? dataIni.value : '';
+    const valorFim = dataFim ? dataFim.value : '';
+    
+    let url = '/api/admin_stats';
+    
+    if (valorInicio || valorFim) {
+      const params = new URLSearchParams();
+      if (valorInicio) params.append('inicio', valorInicio);
+      if (valorFim) params.append('fim', valorFim);
+      url += '?' + params.toString();
+    }
+
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) return;
+        const s = data.stats;
+        document.getElementById('statPendentes').textContent = s.pendentes;
+        document.getElementById('statAtribuidos').textContent = s.atribuidos;
+        document.getElementById('statTotal').textContent = s.total_clientes;
+        document.getElementById('statVendedoresAtivos').textContent = s.vendedores_ativos;
+      });
+  }
+
+  carregarStats();
+  window.carregarStats = carregarStats;
+
+  const btnAtualizarLeads = document.getElementById('btnAtualizarLeads');
+  if(btnAtualizarLeads) {
+      btnAtualizarLeads.addEventListener('click', () => {
+          const icon = btnAtualizarLeads.querySelector('i');
+          icon.classList.add('fa-spin');
+          
+          carregarStats();
+          carregarSolicitacoes();
+          carregarDadosDistribuir();
+          
+          setTimeout(() => icon.classList.remove('fa-spin'), 600);
+      });
+  }
+
+
+  function carregarDesempenho() {
+    const inicio = document.getElementById('filtroDataInicio').value;
+    const fim = document.getElementById('filtroDataFim').value;
+    const tbody = document.getElementById('vendedoresTableBody');
+    
+    let url = '/api/analise_data';
+    if (inicio || fim) {
+      const params = new URLSearchParams();
+      if (inicio) params.append('inicio', inicio);
+      if (fim) params.append('fim', fim);
+      url += '?' + params.toString();
+    }
+
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) return;
+        if (data.vendedores.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b;">Nenhum vendedor encontrado.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        data.vendedores.forEach(v => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${v.nome}</strong></td>
+                <td>${v.total_consultas}</td>
+                <td style="color:#28a745; font-weight:700;">${v.elegiveis}</td>
+                <td style="color:#ef4444; font-weight:700;">${v.nao_elegiveis || 0}</td>
+                <td><span class="taxa-badge">${v.taxa_conversao}%</span></td>
+                <td><span class="status-${v.status === 'Ativo' ? 'ativo' : 'inativo'}">${v.status}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+      });
+  }
+  window.carregarDesempenho = carregarDesempenho;
+
+  // --- Contagem de caracteres ---
+  const textarea = document.getElementById('comunicadoMensagem');
+  const charCount = document.getElementById('charCount');
+  textarea.addEventListener('input', () => {
+    charCount.textContent = textarea.value.length;
+  });
+
+  // --- Criar Comunicado ---
+  document.getElementById('btnCriarComunicado').addEventListener('click', () => {
+    const titulo = document.getElementById('comunicadoTitulo').value.trim();
+    const tipo = document.getElementById('comunicadoTipo').value;
+    const mensagem = textarea.value.trim();
+
+    if (!titulo || !mensagem) {
+      alert('Por favor, preencha o título e a mensagem do comunicado.');
+      return;
+    }
+
+    fetch('/api/criar_comunicado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, tipo, mensagem })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert('✅ ' + data.message);
+        document.getElementById('comunicadoTitulo').value = '';
+        textarea.value = '';
+        charCount.textContent = '0';
+      } else {
+        alert('❌ ' + data.message);
+      }
+    });
+  });
+
+  carregarConfigDist();
+
+  // --- Busca de Vendedor ---
+  // --- Busca de Vendedor ---
+  document.getElementById('vendedorSearchInput').addEventListener('input', function() {
+    const termo = this.value.toLowerCase();
+    document.querySelectorAll('#vendedoresTableBody tr').forEach(row => {
+      row.style.display = row.cells[0].textContent.toLowerCase().includes(termo) ? '' : 'none';
+    });
+  });
+
+  // Limpa o campo com um pequeno atraso para vencer o autofill do navegador
+  setTimeout(() => {
+    const searchInput = document.getElementById('vendedorSearchInput');
+    if (searchInput) searchInput.value = '';
+  }, 500);
+
+});
+
+// ── Modal Importar ──
+function abrirModalImportar() {
+  const overlay = document.getElementById('modalImportar');
+  overlay.classList.add('open');
+  carregarBancosModal();
+}
+
+function fecharModalImportar() {
+  document.getElementById('modalImportar').classList.remove('open');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('uploadFilename').style.display = 'none';
+  document.getElementById('uploadFilename').textContent = '';
+  document.getElementById('btnConfirmarImport').disabled = true;
+  document.getElementById('modalWarn').style.display = 'flex';
+  document.getElementById('modalBancoSelect').value = '';
+}
+
+function carregarBancosModal() {
+  fetch('/api/bancos')
+    .then(r => r.json())
+    .then(data => {
+      const sel = document.getElementById('modalBancoSelect');
+      sel.innerHTML = '<option value="">Selecione o banco desta importação...</option>';
+      if (data.success && data.bancos.length > 0) {
+        data.bancos.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b.id;
+          opt.textContent = b.nome + (b.codigo ? ` (${b.codigo})` : '');
+          sel.appendChild(opt);
+        });
+      } else {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '-- Nenhum banco cadastrado. Adicione em Gerenciar Bancos --';
+        opt.disabled = true;
+        sel.appendChild(opt);
+      }
+    });
+}
+
+function verificarModalReady() {
+  const banco = document.getElementById('modalBancoSelect').value;
+  const arquivo = document.getElementById('fileInput').files.length > 0;
+  const btn = document.getElementById('btnConfirmarImport');
+  const warn = document.getElementById('modalWarn');
+  btn.disabled = !(banco && arquivo);
+  warn.style.display = banco ? 'none' : 'flex';
+}
+
+document.getElementById('modalBancoSelect').addEventListener('change', verificarModalReady);
+
+document.getElementById('fileInput').addEventListener('change', function() {
+  if (this.files.length > 0) {
+    const fn = document.getElementById('uploadFilename');
+    fn.textContent = '✅ ' + this.files[0].name;
+    fn.style.display = 'block';
+  }
+  verificarModalReady();
+});
+
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('drag');
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    document.getElementById('fileInput').files = files;
+    const fn = document.getElementById('uploadFilename');
+    fn.textContent = '✅ ' + files[0].name;
+    fn.style.display = 'block';
+    verificarModalReady();
+  }
+});
+
+document.getElementById('modalImportar').addEventListener('click', function(e) {
+  if (e.target === this) fecharModalImportar();
+});
+
+document.getElementById('btnConfirmarImport').addEventListener('click', () => {
+    const banco_id = document.getElementById('modalBancoSelect').value;
+    const files = document.getElementById('fileInput').files;
+    
+    if (!banco_id || files.length === 0) return;
+
+    const formData = new FormData();
+    formData.append('file', files[0]);
+    formData.append('banco_id', banco_id);
+
+    const btn = document.getElementById('btnConfirmarImport');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
+
+    fetch('/api/importar_excel', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ ' + data.message);
+            fecharModalImportar();
+            carregarDadosDistribuir();
+            
+            const btnAplicarStats = document.getElementById('btnAplicarStats');
+            if(btnAplicarStats) btnAplicarStats.click();
+        } else {
+            alert('❌ Erro: ' + (data.message || 'Erro ao importar'));
+        }
+    })
+    .catch(err => {
+        alert('❌ Erro na comunicação com o servidor.');
+    })
+    .finally(() => {
+        btn.innerHTML = '<i class="fas fa-file-upload"></i> Importar Dados';
+        btn.disabled = false;
+    });
+});
+
+// ── Gerenciamento de Leads ──
+
+// ── Configuração de Distribuição Automática Avançada ──
+
+let configDistAtual = { ativa: false, qtd: 10, vendedores: [], banco_id: '' };
+
+function carregarConfigDist() {
+    fetch('/api/admin/config')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                configDistAtual = {
+                    ativa: data.dist_auto_ativa,
+                    qtd: data.dist_auto_qtd,
+                    vendedores: data.dist_auto_vendedores,
+                    banco_id: data.dist_auto_banco || ''
+                };
+                
+                const toggle = document.getElementById('toggleDistAuto');
+                const label = document.getElementById('labelStatusAuto');
+                const resumo = document.getElementById('resumoDistAuto');
+                
+                toggle.checked = data.dist_auto_ativa;
+                
+                if (data.dist_auto_ativa) {
+                    label.textContent = 'DIST. AUTOMÁTICA: ATIVADA';
+                    label.style.color = '#28a745';
+                    resumo.style.display = 'flex';
+                    document.getElementById('solicitacoesContainer').style.display = 'none';
+                    document.getElementById('countVendedoresAuto').textContent = data.dist_auto_vendedores.length;
+                    document.getElementById('qtdVendedoresAuto').textContent = data.dist_auto_qtd;
+                } else {
+                    label.textContent = 'DIST. AUTOMÁTICA: DESATIVADA';
+                    label.style.color = '#64748b';
+                    resumo.style.display = 'none';
+                    document.getElementById('solicitacoesContainer').style.display = 'block';
+                    carregarSolicitacoes(); // Carrega solicitações manuais
+                }
+            }
+        });
+}
+
+function carregarSolicitacoes() {
+    const lista = document.getElementById('listaSolicitacoesPendentes');
+    const empty = document.getElementById('leadsEmptyArea');
+    
+    fetch('/api/admin/solicitacoes')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (data.solicitacoes.length === 0) {
+                    lista.style.display = 'none';
+                    empty.style.display = 'block';
+                } else {
+                    empty.style.display = 'none';
+                    lista.style.display = 'flex';
+                    lista.innerHTML = data.solicitacoes.map(s => `
+                        <div class="sol-card">
+                            <div class="sol-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="sol-info">
+                                <strong>${s.vendedor_nome || s.vendedor}</strong>
+                                <span>Solicitou novos leads em ${new Date(s.criado_em).toLocaleString()}</span>
+                            </div>
+                            <div class="sol-actions">
+                                <input type="number" id="qtd_${s.id}" class="sol-qty-input" value="${s.quantidade_solicitada}" min="1">
+                                <button class="btn-aprovar" onclick="processarSolicitacao(${s.id}, 'aprovar')">
+                                    <i class="fas fa-check"></i> Aprovar
+                                </button>
+                                <button class="btn-rejeitar" onclick="processarSolicitacao(${s.id}, 'rejeitar')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        });
+}
+window.carregarSolicitacoes = carregarSolicitacoes;
+
+function processarSolicitacao(id, acao) {
+    const url = acao === 'aprovar' ? '/api/admin/solicitacoes/aprovar' : '/api/admin/solicitacoes/rejeitar';
+    const body = { id: id };
+    
+    if (acao === 'aprovar') {
+        body.quantidade = document.getElementById(`qtd_${id}`).value;
+    }
+    
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            mostrarToast(data.message || 'Solicitação processada!', 'success');
+            carregarSolicitacoes();
+            
+            // Atualiza tudo de forma sincronizada
+            if (typeof atualizarTudo === 'function') atualizarTudo();
+        } else {
+            alert(data.message);
+        }
+    });
+}
+
+function alternarDistAuto(toggle) {
+    if (toggle.checked) {
+        // Se está ligando, abre o modal para configurar quem pode usar
+        abrirModalConfigDistAuto();
+    } else {
+        // Se está desligando, apenas salva o estado desativado
+        salvarEstadoDistAuto(false);
+    }
+}
+
+function abrirModalConfigDistAuto() {
+    const modal = document.getElementById('modalConfigDistAuto');
+    modal.classList.add('open');
+    
+    // Preenche quantidade
+    document.getElementById('modalAutoDistQtd').value = configDistAtual.qtd;
+    
+    // Preenche select de bancos
+    const selBanco = document.getElementById('modalAutoDistBanco');
+    selBanco.innerHTML = '<option value="">Todos os Bancos / Bases</option>';
+    
+    const grupos = {};
+    _bancosDistribuir.forEach(b => {
+        const nomePuro = b.banco_nome_puro || b.banco_nome;
+        if (!grupos[nomePuro]) grupos[nomePuro] = [];
+        grupos[nomePuro].push(b);
+    });
+    
+    for (let bancoNome in grupos) {
+        let optgroupHtml = `<optgroup label="${bancoNome}">`;
+        grupos[bancoNome].forEach(b => {
+            const selected = (configDistAtual.banco_id == b.banco_id) ? 'selected' : '';
+            optgroupHtml += `<option value="${b.banco_id}" ${selected}>${b.banco_data || b.banco_nome} (${b.total} pendentes)</option>`;
+        });
+        optgroupHtml += `</optgroup>`;
+        selBanco.innerHTML += optgroupHtml;
+    }
+    
+    // Carrega lista de vendedores
+    const listEl = document.getElementById('modalAutoDistVendedoresList');
+    listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Carregando vendedores...</div>';
+    
+    fetch('/api/usuarios')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const vendedores = data.usuarios.filter(u => u.papel === 'vendedor' && u.ativo);
+                if (vendedores.length === 0) {
+                    listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">Nenhum vendedor ativo encontrado.</div>';
+                    return;
+                }
+                
+                listEl.innerHTML = vendedores.map(v => `
+                    <label class="vendedor-check-item">
+                        <input type="checkbox" class="vendedor-checkbox-auto" value="${v.id}" 
+                               ${configDistAtual.vendedores.includes(String(v.id)) ? 'checked' : ''}
+                               onchange="atualizarCheckTodosVendedores()">
+                        <div class="v-info">
+                            <strong>${v.nome || v.username}</strong>
+                            <span>${v.username}</span>
+                        </div>
+                    </label>
+                `).join('');
+                
+                atualizarCheckTodosVendedores();
+            }
+        });
+}
+
+function toggleSelecionarTodosVendedores(master) {
+    const checks = document.querySelectorAll('.vendedor-checkbox-auto');
+    checks.forEach(c => c.checked = master.checked);
+}
+
+function atualizarCheckTodosVendedores() {
+    const checks = document.querySelectorAll('.vendedor-checkbox-auto');
+    const master = document.getElementById('checkSelecionarTodosVendedores');
+    if (checks.length === 0) return;
+    
+    const todosMarcados = Array.from(checks).every(c => c.checked);
+    master.checked = todosMarcados;
+}
+
+function fecharModalConfigDistAuto() {
+    document.getElementById('modalConfigDistAuto').classList.remove('open');
+    
+    // Reverte o toggle para o estado real salvo (ativa ou não)
+    const toggle = document.getElementById('toggleDistAuto');
+    const label = document.getElementById('labelStatusAuto');
+    
+    toggle.checked = configDistAtual.ativa;
+    
+    if (!configDistAtual.ativa) {
+        label.textContent = 'DIST. AUTOMÁTICA: DESATIVADA';
+        label.style.color = '#64748b';
+    } else {
+        label.textContent = 'DIST. AUTOMÁTICA: ATIVADA';
+        label.style.color = '#28a745';
+    }
+}
+
+function salvarConfiguracaoAvancadaDist() {
+    const qtd = parseInt(document.getElementById('modalAutoDistQtd').value) || 10;
+    const banco_id = document.getElementById('modalAutoDistBanco').value;
+    const selecionados = Array.from(document.querySelectorAll('.vendedor-checkbox-auto:checked')).map(cb => cb.value);
+    
+    if (selecionados.length === 0) {
+        alert('Selecione ao menos um vendedor para habilitar a distribuição automática.');
+        return;
+    }
+
+    fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            dist_auto_ativa: true, 
+            dist_auto_qtd: qtd,
+            dist_auto_vendedores: selecionados,
+            dist_auto_banco: banco_id
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            fecharModalConfigDistAuto();
+            carregarConfigDist();
+            mostrarToast('Distribuição automática configurada e ativada!', 'success');
+        }
+    });
+}
+
+function salvarEstadoDistAuto(ativa) {
+    fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dist_auto_ativa: ativa })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            carregarConfigDist();
+            mostrarToast(ativa ? 'Distribuição ativada!' : 'Distribuição desativada!', 'info');
+        }
+    });
+}
+
+function rodarDistAutoAgora() {
+    const btn = document.getElementById('btnRodarRoboAgora');
+    if(!btn) return;
+    const originalHtml = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+    
+    fetch('/api/admin/rodar_distribuicao', { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        if (data.success) {
+            mostrarToast(data.message, 'success');
+            if(typeof carregarConfigDist === 'function') carregarConfigDist();
+        } else {
+            mostrarToast(data.message || 'Erro ao rodar robô.', 'error');
+        }
+    })
+    .catch(err => {
+        if(btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+        mostrarToast('Erro de conexão.', 'error');
+    });
+}
+
+function mostrarToast(msg, tipo='success') {
+    // Busca se existe container de toast global ou usa alert se não houver
+    if (typeof window.mostrarToastGlobal === 'function') {
+        window.mostrarToastGlobal(msg, tipo);
+    } else {
+        console.log(`[Toast ${tipo}] ${msg}`);
+    }
+}
+
+// ── Distribuir ──
+
+let _bancosDistribuir = [];
+let _vendedoresDistribuir = [];
+
+function carregarDadosDistribuir() {
+  const selectBanco = document.getElementById('distBancoSelect');
+  const valorAtual = selectBanco.value;
+
+  fetch('/api/clientes_por_banco')
+    .then(r => r.json())
+    .then(data => {
+      _bancosDistribuir = data.bancos || [];
+      selectBanco.innerHTML = '<option value="">Todas as Bases</option>';
+      
+      const grupos = {};
+      _bancosDistribuir.forEach(b => {
+          const nomePuro = b.banco_nome_puro || b.banco_nome;
+          if (!grupos[nomePuro]) grupos[nomePuro] = [];
+          grupos[nomePuro].push(b);
+      });
+      
+      for (let bancoNome in grupos) {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = bancoNome;
+          
+          grupos[bancoNome].forEach(b => {
+              const opt = document.createElement('option');
+              opt.value = b.banco_id;
+              opt.textContent = `${b.banco_data || b.banco_nome} — ${b.total} pendente(s)`;
+              opt.dataset.total = b.total;
+              optgroup.appendChild(opt);
+          });
+          selectBanco.appendChild(optgroup);
+      }
+      
+      if (valorAtual && Array.from(selectBanco.options).some(o => o.value == valorAtual)) {
+          selectBanco.value = valorAtual;
+      } else {
+          selectBanco.value = "";
+      }
+      
+      atualizarDisponiveisBanco();
+    });
+
+  fetch('/api/vendedores')
+    .then(r => r.json())
+    .then(data => {
+      _vendedoresDistribuir = data.vendedores || [];
+      const sel = document.getElementById('distVendedorSelect');
+      sel.innerHTML = '<option value="">Escolha um vendedor...</option>';
+      _vendedoresDistribuir.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = v.nome;
+        opt.dataset.nome = v.nome;
+        sel.appendChild(opt);
+      });
+    });
+
+  renderizarTabelaDistribuicao();
+}
+window.carregarDadosDistribuir = carregarDadosDistribuir;
+
+function atualizarDisponiveisBanco() {
+  const sel = document.getElementById('distBancoSelect');
+  const opt = sel.options[sel.selectedIndex];
+  let total = 0;
+  let nomeBase = 'Todas';
+
+  if (sel.value === '') {
+    total = _bancosDistribuir.reduce((s, b) => s + b.total, 0);
+  } else {
+    total = parseInt(opt.dataset.total || 0);
+    nomeBase = opt.textContent.split('—')[0].trim();
+  }
+
+  document.getElementById('distBaseCountLabel').textContent = `${total} cliente(s) pendente(s) nesta base`;
+  document.getElementById('distQtdHint').textContent = `Máx: ${total}`;
+  
+  document.getElementById('distQtd').max = total;
+  
+  atualizarBotaoDist();
+}
+
+function atualizarBotaoDist() {
+  const vendedor = document.getElementById('distVendedorSelect').value;
+  const qty = parseInt(document.getElementById('distQtd').value) || 0;
+  const btn = document.getElementById('btnDistribuir');
+  const text = document.getElementById('btnDistText');
+  
+  const ok = vendedor && qty > 0;
+  btn.disabled = !ok;
+  
+  if (ok) {
+    text.textContent = `Distribuir ${qty} Cliente(s)`;
+  } else {
+    text.textContent = 'Distribuir Cliente(s)';
+  }
+}
+
+function confirmarDistribuicao() {
+  const selV = document.getElementById('distVendedorSelect');
+  const vendedor_id = selV.value;
+  const vendedor_nome = selV.options[selV.selectedIndex].dataset.nome;
+  const banco_id = document.getElementById('distBancoSelect').value || null;
+  const quantidade = parseInt(document.getElementById('distQtd').value);
+
+  if (!confirm(`Distribuir ${quantidade} cliente(s) para ${vendedor_nome}?`)) return;
+
+  fetch('/api/distribuir_clientes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vendedor_id, vendedor_nome, banco_id, quantidade })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      mostrarToast('✅ ' + d.message, 'success');
+      
+      document.getElementById('distQtd').value = '';
+      
+      // Força atualização de tudo em cadeia para garantir números reais
+      if (typeof atualizarTudo === 'function') atualizarTudo();
+      
+      atualizarBotaoDist();
+    } else {
+      alert('❌ ' + d.message);
+    }
+  });
+}
+
+// ── Tabela Distribuição por Vendedor ──
+
+function renderizarTabelaDistribuicao() {
+  fetch('/api/distribuicao_vendedores')
+    .then(r => r.json())
+    .then(data => {
+      const container = document.getElementById('distTabelaVendedores');
+      if (!container) return;
+      if (!data.success || data.distribuicao.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Nenhum vendedor com clientes atribuídos</p></div>';
+        return;
+      }
+      container.innerHTML = '';
+      
+      data.distribuicao.forEach(v => {
+        const inicial = v.nome.charAt(0).toUpperCase();
+        const colors = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+        const colorIndex = v.nome.charCodeAt(0) % colors.length;
+        const bgColor = colors[colorIndex];
+
+        const temUltimos = v.ultimos_clientes && v.ultimos_clientes.length > 0;
+        
+        const ultimosHtml = temUltimos ? `
+          <div class="vend-card-ultimos">
+            <div class="vend-ultimos-label">Últimos clientes atribuídos:</div>
+            ${v.ultimos_clientes.map(c => `
+              <div class="vend-cliente-row">
+                <span>${c.nome}</span>
+                <span>${c.cpf || c.telefone || '--'}</span>
+              </div>
+            `).join('')}
+          </div>` : '';
+
+        const taxaConv = v.taxa_conversao ? `${v.taxa_conversao}% conversão` : '0% conversão';
+
+        const card = document.createElement('div');
+        card.className = 'vend-card-new';
+        card.innerHTML = `
+          <div class="vend-card-header">
+            <div class="vend-card-info">
+              <div class="vend-avatar-new" style="background-color: ${bgColor};">${inicial}</div>
+              <div class="vend-card-info-text">
+                <strong>${v.nome}</strong>
+                <span>${v.total_atribuidos} clientes atribuídos</span>
+              </div>
+            </div>
+            <div class="vend-badge-new">${taxaConv}</div>
+          </div>
+          ${ultimosHtml}
+          <div class="vend-card-footer" style="padding: 12px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end;">
+            <button class="btn-cancelar-dist" onclick="cancelarDistribuicaoVendedor(${v.vendedor_id})" 
+                    style="background: #fff; border: 1px solid #fee2e2; color: #ef4444; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              <i class="fas fa-undo"></i> Retomar Leads
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    });
+}
+
+function cancelarDistribuicaoVendedor(vendedorId) {
+    if (!confirm('Tem certeza que deseja retomar todos os leads pendentes deste vendedor para a base comum?')) return;
+    
+    fetch('/api/admin/recolher_leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendedor_id: vendedorId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            mostrarToast('✅ ' + data.message, 'success');
+            if (typeof atualizarTudo === 'function') atualizarTudo();
+            renderizarTabelaDistribuicao();
+        } else {
+            alert('❌ ' + data.message);
+        }
+    });
+}
+
+function carregarUsuarios() {
+  fetch('/api/usuarios')
+    .then(r => r.json())
+    .then(data => {
+      const container = document.getElementById('listaUsuarios');
+      if (!container) return;
+      if (!data.success || data.usuarios.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Nenhum usuário encontrado</p></div>';
+        return;
+      }
+      container.innerHTML = '';
+      data.usuarios.forEach(u => {
+        const isAdmin = u.papel === 'admin';
+        const papelBadge = isAdmin
+          ? '<span style="background:#28a745;color:#fff;border-radius:20px;padding:2px 10px;font-size:0.72rem;font-weight:700;"><i class="fas fa-shield-alt" style="margin-right:3px;"></i>Admin</span>'
+          : '<span style="background:#f1f5f9;color:#374151;border-radius:20px;padding:2px 10px;font-size:0.72rem;font-weight:700;border:1px solid #e2e8f0;"><i class="fas fa-user" style="margin-right:3px;"></i>Vendedor</span>';
+        const locMapUrl = (u.lat && u.lng) 
+          ? `https://www.google.com/maps/search/?api=1&query=${u.lat},${u.lng}`
+          : `https://www.google.com/maps/search/${encodeURIComponent(u.localizacao)}`;
+
+        const locLine = u.localizacao
+          ? `<div style="font-size:0.82rem;color:#374151;margin-top:1px;">📍 <strong>Localização:</strong> <a href="${locMapUrl}" target="_blank" style="color:#28a745;text-decoration:none;border-bottom:1px dashed #28a745;">${u.localizacao}</a></div>` : '';
+        const botaoToggle = ''; // Removido a pedido do usuário
+        const botaoDeletar = !isAdmin
+          ? `<button onclick="deletarUsuario(${u.id})" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;font-family:inherit;"><i class="fas fa-trash"></i></button>` : '';
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#ffffff;border-radius:16px;padding:24px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05),0 2px 4px -1px rgba(0,0,0,0.03);border:1px solid #e2e8f0;transition:transform 0.2s,box-shadow 0.2s;';
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <strong style="font-size:0.98rem;color:#1e293b;">${u.nome_exibicao}</strong>
+                ${papelBadge}
+              </div>
+            
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="font-size:0.82rem;color:#374151;">👤 <strong>Usuário:</strong> <span style="color:#28a745;">${u.username}</span></div>
+                <div style="font-size:0.82rem;color:#374151;">🖥️ <strong>E-mail:</strong> <span style="color:#28a745;">${u.email || '—'}</span></div>
+                ${locLine}
+                <div style="font-size:0.82rem;color:#374151;">📅 <strong>Criado em:</strong> <span style="color:#28a745;">${u.criado_em}</span></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button onclick="abrirModalEditarUsuario('${u.id}', '${u.nome}', '${u.username}', '${u.email}', '${u.papel}')" 
+                      style="padding:6px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8rem;cursor:pointer;">
+                <i class="fas fa-pen"></i>
+              </button>
+    
+              ${botaoToggle}
+              ${botaoDeletar}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    });
+}
+
+function abrirModalNovoUsuario() {
+  document.getElementById('modalUsuarioTitulo').textContent = 'Novo Usuário';
+  document.getElementById('nuId').value = '';
+  document.getElementById('btnSalvarUsuario').textContent = 'Criar Usuário';
+  ['nuNome','nuUsername','nuSenha','nuPapel'].forEach(id => {
+      if(id === 'nuPapel') document.getElementById(id).value = 'vendedor';
+      else document.getElementById(id).value = '';
+  });
+  document.getElementById('modalNovoUsuario').style.display = 'flex';
+}
+
+function abrirModalEditarUsuario(id, nome, username, email, papel) {
+  document.getElementById('modalUsuarioTitulo').textContent = 'Editar Usuário';
+  document.getElementById('nuId').value = id;
+  document.getElementById('nuNome').value = nome;
+  document.getElementById('nuUsername').value = username;
+  document.getElementById('nuPapel').value = papel;
+  document.getElementById('nuSenha').value = '';
+  document.getElementById('nuSenha').placeholder = 'Deixe em branco para manter a atual';
+  document.getElementById('btnSalvarUsuario').textContent = 'Salvar Alterações';
+  document.getElementById('modalNovoUsuario').style.display = 'flex';
+}
+
+function fecharModalNovoUsuario() {
+  document.getElementById('modalNovoUsuario').style.display = 'none';
+  document.getElementById('nuSenha').placeholder = 'Senha';
+}
+
+function salvarUsuario() {
+  const id = document.getElementById('nuId').value;
+  const nome = document.getElementById('nuNome').value.trim();
+  const username = document.getElementById('nuUsername').value.trim();
+  const email = '';
+  const senha = document.getElementById('nuSenha').value.trim();
+  const papel = document.getElementById('nuPapel').value;
+
+  if (!username) { alert('Preencha o login.'); return; }
+  if (!id && !senha) { alert('Preencha a senha.'); return; }
+
+  const metodo = id ? 'PUT' : 'POST';
+  const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
+
+  fetch(url, {
+    method: metodo,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password: senha, nome, email, papel })
+  })
+  .then(r => r.json())
+  .then(d => {
+    alert(d.success ? '✅ ' + d.message : '❌ ' + d.message);
+    if (d.success) { 
+      fecharModalNovoUsuario(); 
+      carregarUsuarios(); 
+      const btnAplicarStats = document.getElementById('btnAplicarStats');
+      if(btnAplicarStats) btnAplicarStats.click();
+    }
+  });
+}
+
+function toggleSenhaVisibility() {
+    const input = document.getElementById('nuSenha');
+    const icon = document.getElementById('eyeIconNuSenha');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+function toggleUsuario(id) {
+  const btn = event.currentTarget;
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  fetch(`/api/usuarios/${id}/toggle`, { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      carregarUsuarios();
+    })
+    .finally(() => {
+      btn.disabled = false;
+    });
+}
+
+function deletarUsuario(id) {
+  if (!confirm('Remover este usuário permanentemente?')) return;
+  
+  const btn = event.currentTarget;
+  if (btn.disabled) return;
+  btn.disabled = true;
+  const oldHtml = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  fetch(`/api/usuarios/${id}`, { method: 'DELETE' })
+    .then(r => r.json()).then(d => { 
+      alert(d.message); 
+      carregarUsuarios(); 
+      const btnAplicarStats = document.getElementById('btnAplicarStats');
+      if(btnAplicarStats) btnAplicarStats.click();
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+    });
+}
+
+let currentLogPage = 1;
+
+function limparFiltrosLogs() {
+  document.getElementById('logFiltroInicio').value = '';
+  document.getElementById('logFiltroFim').value = '';
+  document.getElementById('logFiltroUsuario').value = '';
+  document.getElementById('logFiltroAcao').value = '';
+  carregarLogs(1);
+}
+
+function carregarLogs(page = 1) {
+  const container = document.getElementById('listaLogs');
+  if (!container) return;
+  
+  currentLogPage = page;
+  
+  const inicio = document.getElementById('logFiltroInicio').value;
+  const fim = document.getElementById('logFiltroFim').value;
+  const usuario = document.getElementById('logFiltroUsuario').value.trim();
+  const acao = document.getElementById('logFiltroAcao').value.trim();
+
+  let url = `/api/logs?page=${page}&`;
+  if (inicio) url += `inicio=${inicio}&`;
+  if (fim) url += `fim=${fim}&`;
+  if (usuario) url += `usuario=${encodeURIComponent(usuario)}&`;
+  if (acao) url += `acao=${encodeURIComponent(acao)}&`;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      const info = document.getElementById('logsTotalInfo');
+      const btnPrev = document.getElementById('btnLogPrev');
+      const btnNext = document.getElementById('btnLogNext');
+
+      if (!data.success || data.logs.length === 0) {
+        container.innerHTML = '<tr><td colspan="5" style="padding:40px; text-align:center; color:#64748b;">Nenhum log encontrado.</td></tr>';
+        if (info) info.innerHTML = `Nenhum registro`;
+        if (btnPrev) btnPrev.disabled = true;
+        if (btnNext) btnNext.disabled = true;
+        return;
+      }
+      
+      const total = data.total || 0;
+      const limit = data.limit || 50;
+      const totalPages = Math.ceil(total / limit);
+      
+      if (info) info.innerHTML = `Página <b>${page}</b> de <b>${totalPages || 1}</b> <span style="margin-left:10px; color:#94a3b8;">(Total: ${total} registros)</span>`;
+      if (btnPrev) btnPrev.disabled = page <= 1;
+      if (btnNext) btnNext.disabled = page >= totalPages;
+
+      container.innerHTML = '';
+      data.logs.forEach(log => {
+        const isForaLocal = log.acao.includes('FORA DO LOCAL');
+        let acaoStyle = isForaLocal ? 'background:#fee2e2; color:#dc2626; padding:2px 8px; border-radius:4px; font-weight:700;' : 'font-weight:600; color:#1e293b;';
+        
+        const acaoLower = log.acao.toLowerCase();
+        if(!isForaLocal) {
+            if (acaoLower.includes('login')) acaoStyle = 'color:#28a745; font-weight:700;';
+            else if (acaoLower.includes('exclui') || acaoLower.includes('delet')) acaoStyle = 'color:#ef4444; font-weight:700;';
+            else if (acaoLower.includes('edi') || acaoLower.includes('atualiza')) acaoStyle = 'color:#f59e0b; font-weight:700;';
+            else if (acaoLower.includes('cri')) acaoStyle = 'color:#3b82f6; font-weight:700;';
+        }
+        
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        tr.innerHTML = `
+          <td style="padding:12px 16px; color:#64748b; white-space:nowrap;">${log.data}</td>
+          <td style="padding:12px 16px; font-weight:600; color:#1e293b;">${log.usuario}</td>
+          <td style="padding:12px 16px;"><span style="${acaoStyle}">${log.acao}</span></td>
+          <td style="padding:12px 16px; color:#475569;">${log.detalhe || ''}</td>
+          <td style="padding:12px 16px; color:#64748b; font-size:0.75rem;">
+            <div style="font-weight:600; color:#334155;">
+              ${log.ip ? `<a href="https://www.ip-tracker.org/locator/ip-lookup.php?ip=${log.ip}" target="_blank" style="color:inherit; text-decoration:none; border-bottom:1px dashed #cbd5e1;">${log.ip}</a>` : '--'}
+            </div>
+            <div style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${log.localizacao || ''}">
+              ${log.localizacao ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(log.localizacao)}" target="_blank" style="color:inherit; text-decoration:none; border-bottom:1px dashed #cbd5e1;">${log.localizacao}</a>` : '--'}
+            </div>
+          </td>
+        `;
+        container.appendChild(tr);
+      });
+    });
+}
+
+let timeoutLogs = null;
+function carregarLogsDebounced() {
+    clearTimeout(timeoutLogs);
+    timeoutLogs = setTimeout(() => carregarLogs(1), 400); // Sempre reseta pra pag 1 ao buscar
+}
+
+function carregarRankingPerformance() {
+  const container = document.getElementById('rankingPerformanceContainer');
+  const inicio = document.getElementById('filtroDataInicio').value;
+  const fim = document.getElementById('filtroDataFim').value;
+  
+  let url = '/api/performance_ranking';
+  if (inicio || fim) {
+    const params = new URLSearchParams();
+    if (inicio) params.append('inicio', inicio);
+    if (fim) params.append('fim', fim);
+    url += '?' + params.toString();
+  }
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success || data.ranking.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-users-slash"></i><p>Nenhum dado de performance disponível.</p></div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      data.ranking.forEach((v, index) => {
+        const margemFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v.margem_total);
+        const cardId = `perf-details-${index}`;
+        
+        const card = document.createElement('div');
+        card.className = 'perf-card';
+        card.innerHTML = `
+          <div class="perf-card-header">
+            <div class="perf-card-user">
+              <div class="perf-rank-circle">${index + 1}</div>
+              <div class="perf-user-name">${v.nome}</div>
+              ${index === 0 ? '<div class="perf-badge-lugar">🏆 1º Lugar</div>' : ''}
+              ${index === 1 ? '<div class="perf-badge-lugar" style="background:#f1f5f9; color:#475569;">🥈 2º Lugar</div>' : ''}
+              ${index === 2 ? '<div class="perf-badge-lugar" style="background:#fff7ed; color:#9a3412;">🥉 3º Lugar</div>' : ''}
+            </div>
+            <button class="btn-toggle-stats" onclick="togglePerfDetails('${cardId}', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          
+          <div class="perf-stats-row">
+            <div class="stat-box-perf stat-atribuidos">
+              <span>Atribuídos</span>
+              <strong>${v.atribuidos}</strong>
+            </div>
+            <div class="stat-box-perf stat-trabalhados">
+              <span>Trabalhados</span>
+              <strong>${v.trabalhados}</strong>
+            </div>
+            <div class="stat-box-perf stat-elegiveis">
+              <span>Elegíveis</span>
+              <strong>${v.elegiveis}</strong>
+            </div>
+            <div class="stat-box-perf stat-pendentes">
+              <span>Pendentes</span>
+              <strong>${v.pendentes}</strong>
+            </div>
+            <div class="stat-box-perf stat-conversao">
+              <span>Conversão</span>
+              <strong>${v.conversao}% ${v.conversao >= 50 ? '↗' : '↘'}</strong>
+            </div>
+          </div>
+          
+          <div id="${cardId}" class="perf-details-area">
+            <div class="details-grid-perf">
+              <div>
+                <div class="details-col-title">Estatísticas Detalhadas</div>
+                <div class="detail-line"><span>Margem Total</span><strong class="val-green">${margemFmt}</strong></div>
+                <div class="detail-line"><span>Tempo Médio/Cliente</span><strong>-- min</strong></div>
+                <div class="detail-line"><span>Evolução Semanal</span><strong style="color:#16a34a;">+0.0%</strong></div>
+                <div class="detail-line"><span>Taxa de Trabalho</span><strong>${v.taxa_trabalho}%</strong></div>
+              </div>
+              <div>
+                <div class="details-col-title">Bancos Mais Utilizados</div>
+                ${v.bancos.map(b => `
+                  <div class="bank-usage-item">
+                    <div class="bank-info-line"><span>${b.nome}</span><span>${b.qtd} clientes</span></div>
+                    <div class="bank-progress-bg">
+                      <div class="bank-progress-fill" style="width: ${Math.min(100, (b.qtd / v.trabalhados) * 100)}%;"></div>
+                    </div>
+                  </div>
+                `).join('')}
+                ${v.bancos.length === 0 ? '<p style="color:#94a3b8; font-size:0.8rem;">Nenhum banco registrado.</p>' : ''}
+                
+                <div class="perf-summary-mini">
+                  <div class="summary-line-mini" style="font-weight:700; color:#1e293b; margin-bottom:5px;">
+                    <i class="fas fa-bullseye" style="color:#3b82f6;"></i> Performance Geral
+                  </div>
+                  <div class="summary-line-mini green"><i class="fas fa-check-circle"></i> ${v.elegiveis} clientes elegíveis</div>
+                  <div class="summary-line-mini red"><i class="fas fa-times-circle"></i> ${v.trabalhados - v.elegiveis} clientes não elegíveis</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    });
+}
+
+function carregarConsultas() {
+  const tbody = document.getElementById('consultasTableBody');
+  const inicio = document.getElementById('filtroDataInicio').value;
+  const fim = document.getElementById('filtroDataFim').value;
+  const busca = document.getElementById('consultasSearchInput').value.trim();
+  
+  let url = '/api/admin/consultas';
+  const params = new URLSearchParams();
+  if (inicio) params.append('inicio', inicio);
+  if (fim) params.append('fim', fim);
+  if (busca) params.append('busca', busca);
+  if (params.toString()) url += '?' + params.toString();
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success || data.consultas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:#64748b;">Nenhuma consulta encontrada.</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = '';
+      data.consultas.forEach(c => {
+        const margemFmt = c.margem ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(c.margem) : '-';
+        const isElegivel = c.status.toLowerCase().includes('elegível') && !c.status.toLowerCase().includes('não');
+        const statusClass = isElegivel ? 'status-perf-elegivel' : 'status-perf-naoelegivel';
+        const statusIcon = isElegivel ? 'fa-check-circle' : 'fa-times-circle';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${c.data_hora}</td>
+          <td>${c.vendedor}</td>
+          <td>${c.cliente}</td>
+          <td>${c.cpf}</td>
+          <td>${c.banco}</td>
+          <td style="color:${isElegivel ? '#16a34a' : '#94a3b8'}; font-weight:700;">${margemFmt}</td>
+          <td>
+            <span class="status-badge-perf ${statusClass}">
+              <i class="far ${statusIcon}"></i> ${c.status}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+let consultasDebounceTimer;
+function carregarConsultasDebounced() {
+  clearTimeout(consultasDebounceTimer);
+  consultasDebounceTimer = setTimeout(carregarConsultas, 400);
+}
+
+function togglePerfDetails(id, btn) {
+  const el = document.getElementById(id);
+  const icon = btn.querySelector('i');
+  if (el.style.display === 'block') {
+    el.style.display = 'none';
+    icon.className = 'fas fa-eye';
+    btn.style.color = '#64748b';
+    btn.style.background = '#fff';
+  } else {
+    el.style.display = 'block';
+    icon.className = 'fas fa-eye-slash';
+    btn.style.color = '#28a745';
+    btn.style.background = '#f0fdf4';
+  }
+}
+</script>
+{% endblock %}

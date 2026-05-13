@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Disparo</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='foguete.png') }}">
+    
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; 
+            background-color: var(--slate-50); 
+            color: var(--slate-900); 
+            min-height: 100vh; 
+            overflow-x: hidden; 
+        }
+
+        .login-split-body { display: flex; align-items: center; justify-content: center; background-color: var(--slate-50); }
+        .login-split-container { display: flex; width: 100%; min-height: 100vh; background-color: var(--slate-50); }
+
+        /* Left Pane */
+        .login-left {
+            flex: 5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+            background-color: #ffffff;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            z-index: 10;
+        }
+        .login-form-wrapper { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 2rem; }
+
+        .logo-header { display: flex; align-items: center; gap: 0.75rem; }
+        .brand-logo {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            object-fit: contain;
+        }
+        /* Estilo fallback caso a imagem não carregue no preview the AI studio */
+        .brand-logo[style*="display: none"] + .brand-name::before {
+            content: "🚀"; 
+            background-color: var(--primary);
+            color: white;
+            padding: 6px 8px;
+            border-radius: 0.5rem;
+            margin-right: 8px;
+        }
+        .brand-name { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; color: var(--slate-900); }
+        .brand-highlight { color: var(--primary); }
+
+        .login-titles { display: flex; flex-direction: column; gap: 0.75rem; }
+        .login-titles h2 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.025em; color: var(--slate-900); line-height: 1; }
+        .login-titles p { color: var(--slate-500); font-size: 1rem; }
+
+        .login-form { display: flex; flex-direction: column; gap: 1.25rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .form-group label { font-size: 0.875rem; font-weight: 600; color: var(--slate-700); }
+
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 100%;
+            border-radius: 0.5rem;
+            border: 1px solid var(--slate-200);
+            background-color: var(--slate-50);
+            padding: 0.75rem 1rem;
+            font-family: inherit;
+            font-size: 1rem;
+            color: var(--slate-900);
+            transition: all 0.2s;
+            outline: none;
+        }
+        .login-form input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+
+        .password-input-wrap { position: relative; display: flex; align-items: center; }
+        .password-input-wrap input { padding-right: 2.75rem; }
+        .toggle-password { position: absolute; right: 1rem; cursor: pointer; color: var(--slate-400); padding: 5px; transition: color 0.2s; }
+        .toggle-password:hover { color: var(--slate-600); }
+
+        .location-status-badge {
+            display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem;
+            border-radius: 0.5rem; background-color: var(--slate-100); color: var(--slate-600);
+            font-size: 0.75rem; font-weight: 500; transition: all 0.3s;
+        }
+        .location-status-badge.success { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .location-status-badge.error { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+        .form-actions { display: flex; flex-direction: column; gap: 1rem; }
+
+        .btn-primary {
+            width: 100%; padding: 1rem 1.5rem; background-color: var(--primary);
+            color: white; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transition: all 0.2s;
+        }
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-dark); }
+        .btn-primary:disabled { background-color: var(--slate-400); cursor: not-allowed; box-shadow: none; }
+
+        /* Right Pane - Mockup Section */
+        .login-right {
+            flex: 7;
+            position: relative;
+            background-color: var(--slate-900);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem;
+            color: white;
+            overflow: hidden;
+        }
+        .login-right::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.1), transparent 70%);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .right-content {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .right-text-container {
+            text-align: center;
+            margin-bottom: 5rem; /* Empurra os textos para cima */
+        }
+        .right-text-container h1 { 
+            font-size: 3.8rem; 
+            font-weight: 900; 
+            letter-spacing: -0.03em; 
+            color: white; 
+            margin-bottom: 0.5rem; 
+            line-height: 1.1;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .right-text-container p { 
+            color: #a7f3d0; 
+            font-size: 1.3rem; 
+            font-weight: 400; 
+            letter-spacing: 0.01em; 
+            height: 35px; /* Altura fixa para evitar salto no hover */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .orbit-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .orbit-center {
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle, #fef08a 0%, #f59e0b 70%, #d97706 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 40px #f59e0b, 0 0 80px rgba(245, 158, 11, 0.6), inset 0 0 20px #fef08a;
+            z-index: 10;
+        }
+        .orbit-center i {
+            font-size: 3rem;
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+            animation: slow-spin 20s infinite linear;
+        }
+        @keyframes slow-spin { 100% { transform: rotate(360deg); } }
+        .orbit-ring {
+            position: absolute;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            animation: spin infinite linear;
+            pointer-events: none; /* Permite clicar através do anel nas camadas inferiores */
+        }
+        .ring-1 { width: 220px; height: 220px; animation-duration: 20s; }
+        .ring-2 { width: 340px; height: 340px; animation-duration: 35s; animation-direction: reverse; }
+        .ring-3 { width: 460px; height: 460px; animation-duration: 50s; }
+        
+        .orbit-node {
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            background: var(--slate-800);
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 20;
+            pointer-events: auto; /* Reativa o clique apenas nos nós (satélites) */
+        }
+        /* Aumenta a área de clique invisível para o mouse não "escapar" */
+        .orbit-node::before {
+            content: '';
+            position: absolute;
+            top: -15px; left: -15px; right: -15px; bottom: -15px;
+            border-radius: 50%;
+            z-index: -1;
+        }
+        .orbit-node:hover {
+            background: var(--primary);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.8);
+            border-color: white;
+            color: white;
+        }
+        .orbit-node i {
+            font-size: 1.1rem;
+            animation: counter-spin infinite linear;
+        }
+        
+        /* Posições relativas ao círculo */
+        .node-top { top: -22.5px; left: 50%; transform: translateX(-50%); }
+        .node-top:hover { transform: translateX(-50%) scale(1.3); }
+        
+        .node-bottom { bottom: -22.5px; left: 50%; transform: translateX(-50%); }
+        .node-bottom:hover { transform: translateX(-50%) scale(1.3); }
+        
+        .node-left { top: 50%; left: -22.5px; transform: translateY(-50%); }
+        .node-left:hover { transform: translateY(-50%) scale(1.3); }
+        
+        .node-right { top: 50%; right: -22.5px; transform: translateY(-50%); }
+        .node-right:hover { transform: translateY(-50%) scale(1.3); }
+        
+        /* Sincronizando a velocidade do contra-giro com o anel pai */
+        .ring-1 .orbit-node i { animation-duration: 20s; }
+        .ring-2 .orbit-node i { animation-duration: 35s; animation-direction: reverse; }
+        .ring-3 .orbit-node i { animation-duration: 50s; }
+        
+        /* Ondas de Pulso (Broadcasting) */
+        .pulse-wave {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 90px; height: 90px;
+            margin: -45px 0 0 -45px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            animation: pulse-out 4.5s infinite ease-out;
+            pointer-events: none;
+            z-index: 1;
+        }
+        @keyframes pulse-out {
+            0% { transform: scale(1); opacity: 0.8; border-width: 3px; }
+            50% { border-color: #f59e0b; }
+            100% { transform: scale(6); opacity: 0; border-width: 1px; }
+        }
+        
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes counter-spin { 100% { transform: rotate(-360deg); } }
+
+        .carousel-dots { display: flex; gap: 0.5rem; justify-content: center; }
+        .carousel-dots .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background-color: var(--slate-600); transition: all 0.3s; }
+        .carousel-dots .dot.active { background-color: var(--primary); width: 1.5rem; border-radius: 0.25rem; }
+
+        /* Classe utilitária de visibilidade */
+        .hidden { display: none !important; }
+
+        /* Animations Launch */
+        .launch-container { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; pointer-events: none; z-index: 9999; display: flex; justify-content: center; align-items: center; background: rgba(15,23,42,0.7); backdrop-filter: blur(4px); }
+        .launch-container.hidden { display: none !important; }
+        .rocket-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; opacity: 1; }
+
+        .rocket-icon { font-size: 5rem; color: var(--primary); filter: drop-shadow(0 10px 15px rgba(16,185,129,0.4)); z-index: 2; transform: rotate(-45deg); }
+        .exhaust-flame { width: 20px; height: 60px; background: linear-gradient(to bottom, #f59e0b, #ef4444, transparent); border-radius: 0 0 20px 20px; z-index: 1; animation: flicker 0.1s infinite alternate; }
+
+        @keyframes flicker { 0% { transform: scaleY(1) translateX(1px); opacity: 0.8; } 100% { transform: scaleY(1.3) translateX(-1px); opacity: 1; } }
+        @keyframes rocket-launch-anim {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            30% { transform: translateY(20px) scale(1); opacity: 1; }
+            100% { transform: translateY(-150vh) scale(1); opacity: 1; }
+        }
+        .animar-foguete { animation: rocket-launch-anim 1.5s cubic-bezier(0.5, 0, 0.2, 1) forwards !important; }
+
+        @media (max-width: 968px) {
+            .login-split-container { flex-direction: column; }
+            .login-left { width: 100%; min-height: 100vh; }
+            .login-right { display: none; }
+        }
+    </style>
+</head>
+<body class="login-split-body">
+    <div class="login-split-container">
+        <!-- Painel Esquerdo (Formulário) -->
+        <div class="login-left" id="loginCard">
+            <div class="login-form-wrapper">
+                <div class="logo-header">
+                    <!-- Comentado por causa do AI Studio, mas mantido as classes -->
+                    <img src="{{ url_for('static', filename='foguete.png') }}" onerror="this.style.display='none'" alt="Logotipo" class="brand-logo">
+                    <span class="brand-name">Consig<span class="brand-highlight">Tech</span></span>
+                </div>
+
+                <div class="login-titles">
+                    <h2>Entrar</h2>
+                    <p>Bem-vindo de volta! Por favor, insira seus detalhes</p>
+                </div>
+
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username">Usuário</label>
+                        <input type="text" id="username" name="username" placeholder="admin" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <div class="password-input-wrap">
+                            <input type="password" id="password" name="password" placeholder="••••••••" required>
+                            <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <div class="location-status-badge" id="locationStatusDiv">
+                            <i class="fas fa-location-dot"></i>
+                            <span id="locationStatusText">A localização será exigida ao entrar.</span>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" id="submitBtn">
+                        <span id="btnText">Entrar</span>
+                        <i class="fas fa-spinner fa-spin" id="btnSpinner" style="display: none; margin-left: 8px;"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Painel Direito (Ilustração e Welcome) -->
+        <div class="login-right">
+            <div class="right-content">
+                <div class="right-text-container">
+                    <h1 id="featureTitle">Consig Tech</h1>
+                    <p id="featureDesc">Dinheiro e tecnologia na palma de sua mão.</p>
+                </div>
+                
+                <div class="orbit-container">
+                    <div class="orbit-center" id="orbitCenterMain" style="transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                        <i id="centerIcon" class="fas fa-sun" style="transition: all 0.3s ease;"></i>
+                    </div>
+                    
+                    <!-- Ondas de Pulso (Transmissão de Leads) -->
+                    <div class="pulse-wave"></div>
+                    <div class="pulse-wave" style="animation-delay: 1.5s;"></div>
+                    <div class="pulse-wave" style="animation-delay: 3s;"></div>
+                    
+                    <!-- Anel 1: Automação -->
+                    <div class="orbit-ring ring-1">
+                        <div class="orbit-node node-top" data-title="Distribuição" data-desc="Encaminhe clientes automaticamente para a equipe." data-icon="fa-share-nodes">
+                            <i class="fas fa-share-nodes"></i>
+                        </div>
+                        <div class="orbit-node node-bottom" data-title="Robô Automático" data-desc="Distribuição inteligente de leads 24 horas." data-icon="fa-robot">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Anel 2: Gestão -->
+                    <div class="orbit-ring ring-2">
+                        <div class="orbit-node node-left" data-title="Análise de Dados" data-desc="Métricas reais sobre a sua conversão." data-icon="fa-chart-pie">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="orbit-node node-right" data-title="Gestão de Leads" data-desc="Controle absoluto sobre o funil de vendas." data-icon="fa-users">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Anel 3: Infraestrutura -->
+                    <div class="orbit-ring ring-3">
+                        <div class="orbit-node node-top" data-title="Gestão de Equipe" data-desc="Monitore e organize a performance dos vendedores." data-icon="fa-user-tie">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="orbit-node node-bottom" data-title="Bases e Lotes" data-desc="Importe e direcione leads de múltiplas fontes." data-icon="fa-database">
+                            <i class="fas fa-database"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ocultando os pontos de carousel pois agora é interativo -->
+                <div class="carousel-dots" style="opacity: 0;">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container de lançamento (animação) -->
+    <div id="rocketLaunchContainer" class="launch-container hidden">
+        <div class="rocket-wrapper" id="animRocket">
+            <i class="fas fa-rocket rocket-icon"></i>
+            <div class="exhaust-flame"></div>
+        </div>
+    </div>
+
+                    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const loginCard = document.getElementById('loginCard');
+            const launchContainer = document.getElementById('rocketLaunchContainer');
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            const animRocket = document.getElementById('animRocket');
+            
+            const locationStatusDiv = document.getElementById('locationStatusDiv');
+            const locationStatusText = document.getElementById('locationStatusText');
+
+            // MOSTRAR/OCULTAR SENHA
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                if (type === 'text') {
+                    togglePassword.classList.remove('fa-eye');
+                    togglePassword.classList.add('fa-eye-slash');
+                } else {
+                    togglePassword.classList.remove('fa-eye-slash');
+                    togglePassword.classList.add('fa-eye');
+                }
+            });
+
+            // INTERATIVIDADE DA ÓRBITA
+            const orbitContainer = document.querySelector('.orbit-container');
+            const nodes = document.querySelectorAll('.orbit-node');
+            const rings = document.querySelectorAll('.orbit-ring');
+            const icons = document.querySelectorAll('.orbit-node i');
+            const pulses = document.querySelectorAll('.pulse-wave');
+            const mainTitle = document.getElementById('featureTitle');
+            const mainDesc = document.getElementById('featureDesc');
+            const centerIcon = document.getElementById('centerIcon');
+            const orbitCenterMain = document.getElementById('orbitCenterMain');
+            
+            let orbitTimeout;
+
+            // Pausa TUDO quando o mouse entra na área da órbita (facilita mirar nos botões)
+            orbitContainer.addEventListener('mouseenter', () => {
+                rings.forEach(r => r.style.animationPlayState = 'paused');
+                icons.forEach(i => i.style.animationPlayState = 'paused');
+                pulses.forEach(p => p.style.animationPlayState = 'paused');
+            });
+
+            // Retoma a animação apenas quando o mouse sai totalmente da órbita
+            orbitContainer.addEventListener('mouseleave', () => {
+                rings.forEach(r => r.style.animationPlayState = 'running');
+                icons.forEach(i => i.style.animationPlayState = 'running');
+                pulses.forEach(p => p.style.animationPlayState = 'running');
+            });
+
+            nodes.forEach(node => {
+                node.addEventListener('mouseenter', () => {
+                    clearTimeout(orbitTimeout);
+                    
+                    // Altera os textos e ícone central
+                    mainTitle.style.opacity = '0';
+                    mainDesc.style.opacity = '0';
+                    centerIcon.style.opacity = '0';
+                    orbitCenterMain.style.transform = 'scale(0.8)';
+                    
+                    orbitTimeout = setTimeout(() => {
+                        mainTitle.textContent = node.getAttribute('data-title');
+                        mainTitle.style.color = 'var(--primary)';
+                        mainTitle.style.transform = 'scale(1.05)';
+                        mainDesc.textContent = node.getAttribute('data-desc');
+                        centerIcon.className = 'fas ' + node.getAttribute('data-icon');
+                        centerIcon.style.color = 'white'; // Ícone branco no hover para destacar
+                        
+                        mainTitle.style.opacity = '1';
+                        mainDesc.style.opacity = '1';
+                        centerIcon.style.opacity = '1';
+                        orbitCenterMain.style.transform = 'scale(1.2)';
+                        orbitCenterMain.style.background = 'radial-gradient(circle, var(--primary), var(--primary-dark))';
+                        orbitCenterMain.style.boxShadow = '0 0 60px var(--primary)';
+                    }, 150);
+
+                    // Efeito de foco (escurece os outros)
+                    nodes.forEach(n => {
+                        if (n !== node) n.style.opacity = '0.3';
+                    });
+                });
+                
+                node.addEventListener('mouseleave', () => {
+                    clearTimeout(orbitTimeout);
+                    
+                    // Restaura textos originais
+                    mainTitle.style.opacity = '0';
+                    mainDesc.style.opacity = '0';
+                    centerIcon.style.opacity = '0';
+                    orbitCenterMain.style.transform = 'scale(0.8)';
+                    
+                    orbitTimeout = setTimeout(() => {
+                        mainTitle.textContent = 'Consig Tech';
+                        mainTitle.style.color = 'white';
+                        mainTitle.style.transform = 'scale(1)';
+                        mainDesc.textContent = 'Dinheiro e tecnologia na palma de sua mão.';
+                        centerIcon.className = 'fas fa-sun';
+                        centerIcon.style.color = '#ffffff'; 
+                        
+                        mainTitle.style.opacity = '1';
+                        mainDesc.style.opacity = '1';
+                        centerIcon.style.opacity = '1';
+                        orbitCenterMain.style.transform = 'scale(1)';
+                        orbitCenterMain.style.background = 'radial-gradient(circle, #fef08a 0%, #f59e0b 70%, #d97706 100%)';
+                        orbitCenterMain.style.boxShadow = '0 0 40px #f59e0b, 0 0 80px rgba(245, 158, 11, 0.6), inset 0 0 20px #fef08a';
+                    }, 150);
+
+                    // Restaura opacidade
+                    nodes.forEach(n => n.style.opacity = '1');
+                });
+            });
+
+            // ─── FUNÇÃO CENTRAL DE AUTENTICAÇÃO ───────────────────────────────────
+            async function doLogin(username, password, userLocation) {
+                const submitBtn = document.getElementById('submitBtn');
+                const btnText = document.getElementById('btnText');
+                const btnSpinner = document.getElementById('btnSpinner');
+
+                btnText.textContent = 'Autenticando...';
+
+                try {
+                    const response = await fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password, location: userLocation }),
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Feedback visual de sucesso
+                        locationStatusText.textContent = userLocation
+                            ? 'Localização registrada com sucesso!'
+                            : 'Login realizado (sem GPS).';
+                        locationStatusDiv.style.backgroundColor = '#d1fae5';
+                        locationStatusDiv.style.color = '#065f46';
+                        locationStatusDiv.style.borderColor = '#a7f3d0';
+                        locationStatusDiv.style.borderRadius = '8px';
+                        locationStatusDiv.style.padding = '10px 14px';
+
+                        // Animação de lançamento
+                        loginCard.classList.add('hidden');
+                        setTimeout(() => {
+                            launchContainer.classList.remove('hidden');
+                            animRocket.classList.add('animar-foguete');
+                            setTimeout(() => {
+                                window.location.href = data.next_url;
+                            }, 1500);
+                        }, 300);
+                    } else {
+                        // Credenciais inválidas – restaura o formulário
+                        locationStatusText.textContent = 'A localização será registrada ao entrar.';
+                        locationStatusDiv.style.backgroundColor = '';
+                        locationStatusDiv.style.color = '';
+                        locationStatusDiv.style.borderColor = '';
+                        btnText.textContent = 'Entrar';
+                        btnSpinner.style.display = 'none';
+                        submitBtn.disabled = false;
+                        alert(data.message || 'Usuário ou senha inválidos.');
+                    }
+                } catch (networkError) {
+                    console.error('Erro de rede:', networkError);
+                    btnText.textContent = 'Entrar';
+                    btnSpinner.style.display = 'none';
+                    submitBtn.disabled = false;
+                    alert('Erro de conexão com o servidor. Verifique sua internet e tente novamente.');
+                }
+            }
+
+            // LÓGICA DE LOGIN COM SOLICITAÇÃO DE LOCALIZAÇÃO
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = loginForm.username.value.trim();
+                const password = loginForm.password.value;
+                const submitBtn = document.getElementById('submitBtn');
+                const btnText = document.getElementById('btnText');
+                const btnSpinner = document.getElementById('btnSpinner');
+
+                if (!username || !password) {
+                    alert('Preencha o usuário e a senha.');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                btnText.textContent = 'Verificando localização...';
+                btnSpinner.style.display = 'inline-block';
+
+                // Tenta obter a geolocalização; se falhar, faz o login mesmo assim
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            // GPS concedido
+                            const userLocation = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            };
+                            locationStatusText.textContent = 'GPS ativado! Autenticando...';
+                            locationStatusDiv.style.backgroundColor = '#ecfdf5';
+                            locationStatusDiv.style.color = '#065f46';
+                            locationStatusDiv.style.borderColor = '#a7f3d0';
+                            doLogin(username, password, userLocation);
+                        },
+                        (geoError) => {
+                            // GPS negado ou indisponível – prossegue o login sem coordenadas
+                            console.warn('GPS negado:', geoError.message);
+                            locationStatusText.innerHTML = '<strong>GPS não ativado.</strong> Continuando sem localização...';
+                            locationStatusDiv.style.backgroundColor = '#fef9c3';
+                            locationStatusDiv.style.color = '#713f12';
+                            locationStatusDiv.style.borderColor = '#fde047';
+                            doLogin(username, password, null);
+                        },
+                        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                    );
+                } else {
+                    // Navegador sem suporte a geolocalização – faz login sem coordenadas
+                    locationStatusText.textContent = 'Navegador sem suporte a GPS. Continuando...';
+                    doLogin(username, password, null);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

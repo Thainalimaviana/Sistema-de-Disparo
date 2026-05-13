@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Consig Tech{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<style>
+/* Custom Scroll para Tabela */
+.table-scroll-wrap {
+    max-height: 320px;
+    overflow-y: auto;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+.table-scroll-wrap::-webkit-scrollbar {
+    width: 6px;
+}
+.table-scroll-wrap::-webkit-scrollbar-track {
+    background: transparent;
+}
+.table-scroll-wrap::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+.table-scroll-wrap::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+.table-scroll-wrap thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8fafc;
+}
+</style>
+<div class="dashboard-content-inner">
+    <p style="color: #28a745; font-size: 0.95rem; margin-top: -20px; margin-bottom: 25px;">Visão geral do sistema de vendas</p>
+
+    <!-- Comunicados da Equipe -->
+    <div id="comunicadosSection" style="margin-bottom: 25px; display:none;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <i class="fas fa-bullhorn" style="color:#f97316;"></i>
+            <span style="font-weight:700; font-size:0.95rem; color:#1e293b;">Comunicados da Equipe</span>
+        </div>
+        <div id="comunicadosList" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="filter-bar">
+        <div class="filter-title">
+            <i class="far fa-calendar-alt"></i>
+            <span>Filtrar por Período</span>
+        </div>
+        <div class="filter-controls">
+            <div class="input-group">
+                <label>Data Início</label>
+                <div class="input-with-icon">
+                    <i class="far fa-calendar"></i>
+                    <input type="date" id="dashDataInicio">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Data Fim</label>
+                <div class="input-with-icon">
+                    <i class="far fa-calendar"></i>
+                    <input type="date" id="dashDataFim">
+                </div>
+            </div>
+            <div class="filter-buttons">
+                <button class="btn-secondary" id="btnLimparDash">Limpar Filtros</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de Estatísticas -->
+    <div class="stats-grid">
+        <!-- Coluna 1 e 2 - Linha 1 -->
+        <div class="stat-card-new card-blue">
+            <div class="stat-card-header">
+                <span class="stat-label">Total de Clientes</span>
+                <span class="stat-value" id="contactsStat">0</span>
+            </div>
+            <div class="stat-icon-box icon-blue"><i class="fas fa-users"></i></div>
+        </div>
+        <div class="stat-card-new card-green">
+            <div class="stat-card-header">
+                <span class="stat-label">Elegíveis</span>
+                <span class="stat-value" id="elegiveisStat">0</span>
+            </div>
+            <div class="stat-icon-box icon-green"><i class="fas fa-check-circle"></i></div>
+        </div>
+
+        <!-- Coluna 3 - Card Grande Lateral -->
+        <div class="stat-card-new card-purple card-large">
+            <div class="stat-card-header">
+                <span class="stat-label">Taxa de Conversão</span>
+                <span class="stat-value" id="conversaoStat">0%</span>
+            </div>
+            <div class="stat-icon-box icon-purple"><i class="fas fa-chart-line"></i></div>
+        </div>
+
+        <!-- Coluna 1 e 2 - Linha 2 -->
+        <div class="stat-card-new card-red">
+            <div class="stat-card-header">
+                <span class="stat-label">Não Elegíveis</span>
+                <span class="stat-value" id="naoElegiveisStat">0</span>
+            </div>
+            <div class="stat-icon-box icon-red"><i class="fas fa-times-circle"></i></div>
+        </div>
+        <div class="stat-card-new card-orange">
+            <div class="stat-card-header">
+                <span class="stat-label">Não Distribuídos</span>
+                <span class="stat-value" id="pendentesStat">0</span>
+            </div>
+            <div class="stat-icon-box icon-orange"><i class="fas fa-layer-group"></i></div>
+        </div>
+    </div>
+
+    <!-- Tabs de Atividades -->
+    <div class="tabs-container">
+        <div class="tab-list">
+            <button class="tab-btn active" id="tabRecentes">Atividades Recentes</button>
+            <button class="tab-btn" id="tabRanking">
+                <i class="fas fa-medal"></i> Ranking de Bancos
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabela de Dados (Atividades Recentes) -->
+    <div class="table-container" id="contentRecentes" style="overflow: hidden;">
+        <div class="table-header">
+            <h3>Atividades Recentes</h3>
+        </div>
+        <div class="table-scroll-wrap">
+            <table class="data-table" style="margin-top: 0; border-top: none;">
+                <thead>
+                    <tr>
+                        <th>Vendedor</th>
+                        <th>Cliente</th>
+                        <th>Banco</th>
+                        <th>Margem</th>
+                    </tr>
+                </thead>
+                <tbody id="recentActivitiesBody">
+                    <!-- Preenchido via JS -->
+                    <tr>
+                        <td colspan="4" style="text-align:center;color:#64748b;padding:20px;">Carregando atividades...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Lista de Ranking (Oculta por padrão) -->
+    <div class="table-container hidden" id="contentRanking">
+        <div class="table-header">
+            <h3>Melhores Bancos - Ranking Mensal</h3>
+        </div>
+        <div class="ranking-list" id="rankingListBody">
+            <div style="text-align:center;color:#64748b;padding:20px;">Carregando ranking...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Socket.io para Atualização em Tempo Real ---
+        const socket = io({ transports: ['websocket', 'polling'] });
+        
+        socket.on('distribuicao_leads', () => {
+            const inicio = document.getElementById('dashDataInicio').value;
+            const fim = document.getElementById('dashDataFim').value;
+            carregarDashboard(inicio, fim);
+        });
+        
+        socket.on('atualizar_dashboard', () => {
+            const inicio = document.getElementById('dashDataInicio').value;
+            const fim = document.getElementById('dashDataFim').value;
+            carregarDashboard(inicio, fim);
+        });
+
+        const tabRecentes = document.getElementById('tabRecentes');
+        const tabRanking = document.getElementById('tabRanking');
+        const contentRecentes = document.getElementById('contentRecentes');
+        const contentRanking = document.getElementById('contentRanking');
+
+        tabRecentes.addEventListener('click', () => {
+            tabRecentes.classList.add('active');
+            tabRanking.classList.remove('active');
+            contentRecentes.classList.remove('hidden');
+            contentRanking.classList.add('hidden');
+        });
+
+        tabRanking.addEventListener('click', () => {
+            tabRanking.classList.add('active');
+            tabRecentes.classList.remove('active');
+            contentRanking.classList.remove('hidden');
+            contentRecentes.classList.add('hidden');
+        });
+        
+        console.log("Dashboard carregado com o novo design!");
+
+        // --- Carregar Comunicados ---
+        const tipoIcones = {
+            informativo: { icon: '📘', cor: '#3b82f6' },
+            urgente:     { icon: '🔴', cor: '#ef4444' },
+            meta:        { icon: '🎯', cor: '#8b5cf6' },
+            aviso:       { icon: '⚠️', cor: '#f59e0b' },
+            parabenizacao: { icon: '🏆', cor: '#28a745' }
+        };
+
+        function atualizarComunicados() {
+            fetch('/api/comunicados')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const section = document.getElementById('comunicadosSection');
+                        const list = document.getElementById('comunicadosList');
+                        list.innerHTML = '';
+                        
+                        const agora = new Date();
+                        // Tempo reduzido para 2 minutos no dashboard
+                        const limiteTempo = new Date(agora.getTime() - 2 * 60 * 1000);
+                        let exibidos = 0;
+                        const currentUser = "{{ session['user'] }}";
+
+                        (data.comunicados || []).forEach(c => {
+                            // Pula se já foi lido ou arquivado pelo usuário
+                            if ((c.lido_por || '').includes(currentUser)) return;
+                            if ((c.arquivado_por || '').includes(currentUser)) return;
+
+                            let dateStr = c.criado_em || '';
+                            // Tratamento robusto para datas
+                            if (dateStr && typeof dateStr === 'string') {
+                                if (!dateStr.includes('T') && dateStr.includes(' ')) {
+                                    dateStr = dateStr.replace(' ', 'T');
+                                }
+                                // Adiciona Z apenas se não houver NENHUM sinal de timezone (+, - no final ou Z)
+                                if (!dateStr.includes('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) {
+                                    dateStr += 'Z';
+                                }
+                            }
+                            
+                            const dataCriacao = new Date(dateStr);
+                            
+                            // Verifica se a data é válida antes de comparar
+                            if (isNaN(dataCriacao.getTime())) return;
+
+                            // Somem após 2 minutos no dashboard (foco em comunicados recentes/importantes)
+                            if (dataCriacao < limiteTempo) return;
+                            
+                            exibidos++;
+                            const info = tipoIcones[c.tipo] || { icon: '📢', cor: '#64748b' };
+                            const data_fmt = dataCriacao.toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                            const card = document.createElement('div');
+                            card.style.cssText = `
+                                background:#fff;
+                                border:1px solid #e2e8f0;
+                                border-left: 4px solid ${info.cor};
+                                border-radius:10px;
+                                padding:14px 18px;
+                                display:flex;
+                                flex-direction:column;
+                                gap:6px;
+                                cursor: pointer;
+                                transition: transform 0.2s;
+                            `;
+                            card.onclick = () => window.location.href = "{{ url_for('comunicados_page') }}";
+                            card.onmouseover = () => card.style.transform = 'translateX(5px)';
+                            card.onmouseout = () => card.style.transform = 'translateX(0)';
+
+                            card.innerHTML = `
+                                <div style="display:flex;align-items:center;justify-content:space-between;">
+                                    <span style="font-weight:700;font-size:0.92rem;color:#1e293b;">
+                                        ${c.fixado ? '📌 ' : ''}${info.icon} ${c.titulo}
+                                    </span>
+                                    <span style="font-size:0.75rem;color:#94a3b8;">${data_fmt}</span>
+                                </div>
+                                <p style="margin:0;font-size:0.87rem;color:#475569;">${c.mensagem}</p>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                                    <span style="font-size:0.75rem;color:#94a3b8;">Enviado por: ${c.autor.split('@')[0]}</span>
+                                    <span style="font-size:0.7rem; color:${info.cor}; font-weight:600; text-transform:uppercase;">Novo</span>
+                                </div>
+                            `;
+                            list.appendChild(card);
+                        });
+                        
+                        if (exibidos > 0) {
+                            section.style.display = 'block';
+                        } else {
+                            section.style.display = 'none';
+                        }
+                    }
+                });
+        }
+        
+        atualizarComunicados();
+        // Recalcular comunicados e esconder os expirados a cada 10 segundos
+        setInterval(atualizarComunicados, 10000);
+
+        // --- Carregar Dados do Dashboard ---
+        function carregarDashboard(inicio = '', fim = '') {
+            let url = '/api/dashboard_data';
+            const params = new URLSearchParams();
+            if (inicio) params.append('inicio', inicio);
+            if (fim) params.append('fim', fim);
+            if (params.toString()) url += '?' + params.toString();
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    // Atualizar Cards
+                    if (data.stats) {
+                        document.getElementById('contactsStat').textContent = data.stats.contatos || 0;
+                        document.getElementById('elegiveisStat').textContent = data.stats.elegiveis || 0;
+                        document.getElementById('naoElegiveisStat').textContent = data.stats.nao_elegiveis || 0;
+                        document.getElementById('pendentesStat').textContent = data.stats.nao_distribuidos || 0;
+                        document.getElementById('conversaoStat').textContent = (data.stats.taxa_conversao || 0) + '%';
+                    }
+
+                    // Preencher tabela de atividades
+                    const tbody = document.getElementById('recentActivitiesBody');
+                    if (data.atividades && data.atividades.length > 0) {
+                        tbody.innerHTML = '';
+                        data.atividades.forEach(a => {
+                            let statusClass = 'pending';
+                            let statusIcon = 'fa-clock';
+                            let statusLabel = 'Pendente';
+                            
+                            const st = (a.status || '').toLowerCase();
+                            if (st.includes('elegível') && !st.includes('não')) {
+                                statusClass = 'eligible'; statusIcon = 'fa-check'; statusLabel = 'Elegível';
+                            } else if (st.includes('não') || st.includes('rejeitado')) {
+                                statusClass = 'not-eligible'; statusIcon = 'fa-times'; statusLabel = 'Não Elegível';
+                            }
+                            
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${a.vendedor}</td>
+                                <td>${a.cliente} <span class="status-tag ${statusClass}"><i class="fas ${statusIcon}"></i> ${statusLabel}</span></td>
+                                <td>${a.banco}</td>
+                                <td><strong>${a.margem}</strong></td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:20px;">Nenhuma atividade recente encontrada para este período.</td></tr>';
+                    }
+
+                    // Preencher Ranking com Barra de Progresso (Elegibilidade)
+                    const rankBody = document.getElementById('rankingListBody');
+                    if (data.ranking && data.ranking.length > 0) {
+                        rankBody.innerHTML = '';
+                        
+                        data.ranking.forEach((b, idx) => {
+                            const pct = b.porcentagem || 0;
+                            const eleg = b.elegiveis || 0;
+                            const total = b.total || 0;
+                            
+                            const item = document.createElement('div');
+                            // Estilo moderno inline
+                            item.style.cssText = `
+                                background:#fff; border:1px solid #e2e8f0; border-radius:12px;
+                                padding:16px 20px; display:flex; flex-direction:column; gap:10px;
+                                transition:all 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.02);
+                                margin-bottom: 12px;
+                            `;
+                            
+                            item.innerHTML = `
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div style="display:flex; align-items:center; gap:12px;">
+                                        <div style="width:28px;height:28px;background:#28a745;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;">${idx + 1}</div>
+                                        <span style="font-weight:700;color:#1e293b;font-size:0.95rem;">${b.nome}</span>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <span style="display:block;font-weight:800;color:#0f172a;font-size:1.05rem;">${pct.toFixed(1)}%</span>
+                                        <span style="font-size:0.75rem;color:#64748b;font-weight:500;">${eleg} de ${total} elegíveis</span>
+                                    </div>
+                                </div>
+                                <div style="width:100%;background:#f1f5f9;height:6px;border-radius:4px;overflow:hidden;margin-top:2px;">
+                                    <div style="width:${pct}%;background:linear-gradient(90deg, #28a745, #34d399);height:100%;border-radius:4px;transition:width 0.5s ease-out;"></div>
+                                </div>
+                            `;
+                            rankBody.appendChild(item);
+                        });
+                    } else {
+                        rankBody.innerHTML = '<div style="text-align:center;color:#64748b;padding:20px;">Nenhum dado de elegibilidade para este período.</div>';
+                    }
+                })
+                .catch(e => console.error('Erro ao carregar dados do dashboard:', e));
+        }
+
+        // Chamada inicial
+        carregarDashboard();
+
+        // Aplicar filtros automaticamente ao mudar a data
+        const recarregar = () => {
+            const inicio = document.getElementById('dashDataInicio').value;
+            const fim = document.getElementById('dashDataFim').value;
+            carregarDashboard(inicio, fim);
+        };
+        
+        document.getElementById('dashDataInicio').addEventListener('change', recarregar);
+        document.getElementById('dashDataFim').addEventListener('change', recarregar);
+
+        document.getElementById('btnLimparDash').addEventListener('click', () => {
+            document.getElementById('dashDataInicio').value = '';
+            document.getElementById('dashDataFim').value = '';
+            carregarDashboard();
+        });
+    });
+</script>
+{% endblock %}

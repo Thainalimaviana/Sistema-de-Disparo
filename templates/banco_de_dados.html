@@ -1,0 +1,1059 @@
+{% extends "base.html" %}
+{% block title %}Banco de Dados - Consig Tech{% endblock %}
+{% block page_title %}Banco de Dados{% endblock %}
+
+{% block header_actions %}
+<div style="display:flex; gap:10px; align-items:center;">
+  <button class="btn-header-importar" onclick="abrirModalLotes()">
+    <i class="fas fa-boxes"></i> Gerenciar Lotes
+  </button>
+  <button class="btn-header-importar btn-header-exportar" onclick="abrirModalExportar()">
+    <i class="fas fa-file-download"></i> Exportar Excel
+  </button>
+  <button class="btn-header-importar" onclick="abrirModalImportar()">
+    <i class="fas fa-file-upload"></i> Importar Excel
+  </button>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── Botão Importar Header ── */
+.btn-header-importar, .btn-header-exportar {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 18px;
+  background: transparent;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 50px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-header-importar:hover, .btn-header-exportar:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+.theme-dark .btn-header-importar,
+.theme-dark .btn-header-exportar {
+  color: #e2e8f0;
+  border-color: #475569;
+}
+.theme-dark .btn-header-importar:hover,
+.theme-dark .btn-header-exportar:hover {
+  background: #1e293b;
+  border-color: #64748b;
+}
+/* ── Modal Exportar ── */
+.modal-exp-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+.modal-exp-overlay.open { display: flex; }
+.modal-exp-box {
+  background: #fff; border-radius: 16px; padding: 28px 30px;
+  width: 100%; max-width: 620px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  position: relative; animation: modalIn 0.2s ease;
+}
+.modal-exp-header {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 1rem; font-weight: 700; color: #1e293b;
+  margin-bottom: 22px; padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.modal-exp-header i { color: #3b82f6; font-size: 1.1rem; }
+.modal-exp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.modal-exp-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.modal-exp-group label { display: block; font-size: 0.78rem; font-weight: 700; color: #374151; margin-bottom: 6px; }
+.modal-exp-input {
+  width: 100%; box-sizing: border-box; padding: 10px 12px;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 0.88rem; color: #1e293b; background: #f8fafc;
+  font-family: inherit; outline: none; transition: border-color 0.2s;
+}
+.modal-exp-input:focus { border-color: #28a745; background: #f0fdf4; }
+.modal-exp-select {
+  width: 100%; box-sizing: border-box; padding: 10px 12px;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 0.88rem; color: #1e293b; background: #f0fdf4;
+  font-family: inherit; outline: none; cursor: pointer; transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  padding-right: 32px;
+}
+.modal-exp-select:focus { border-color: #28a745; }
+.modal-exp-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 16px; border-top: 1px solid #f1f5f9; margin-top: 4px;
+}
+.modal-exp-count {
+  font-size: 0.82rem; font-weight: 600; color: #3b82f6;
+  background: #eff6ff; padding: 5px 14px; border-radius: 20px;
+}
+.modal-exp-actions { display: flex; gap: 10px; }
+.btn-exp-limpar {
+  padding: 9px 20px; background: #fff; color: #475569;
+  border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.88rem;
+  font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit;
+}
+.btn-exp-limpar:hover { background: #f1f5f9; }
+.btn-exp-baixar {
+  padding: 9px 22px; background: #28a745; color: #fff;
+  border: none; border-radius: 10px; font-size: 0.88rem;
+  font-weight: 700; cursor: pointer; transition: background 0.2s;
+  display: inline-flex; align-items: center; gap: 8px; font-family: inherit;
+}
+.btn-exp-baixar:hover { background: #1c7c34; }
+.theme-dark .modal-exp-box { background: #1e293b; }
+.theme-dark .modal-exp-header { color: #f1f5f9; border-color: #334155; }
+.theme-dark .modal-exp-group label { color: #cbd5e1; }
+.theme-dark .modal-exp-input, .theme-dark .modal-exp-select { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+.theme-dark .modal-exp-footer { border-color: #334155; }
+.theme-dark .btn-exp-limpar { background: #1e293b; border-color: #475569; color: #94a3b8; }
+/* ── Modal Importar ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 14px; padding: 28px 30px;
+  width: 100%; max-width: 520px; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  position: relative; animation: modalIn 0.2s ease;
+}
+@keyframes modalIn {
+  from { opacity:0; transform: translateY(-20px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.modal-close { position: absolute; top: 16px; right: 18px; background: none; border: none; font-size: 1.2rem; color: #94a3b8; cursor: pointer; }
+.modal-close:hover { color: #475569; }
+.modal-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0 0 6px; }
+.modal-subtitle { font-size: 0.82rem; color: #64748b; margin: 0 0 22px; line-height: 1.5; }
+.modal-label { font-size: 0.83rem; font-weight: 700; color: #374151; margin-bottom: 7px; display: block; }
+.modal-select { width: 100%; padding: 10px 14px; border: 2px solid #28a745; border-radius: 8px; font-size: 0.9rem; color: #1e293b; background: #f0fdf4; font-family: inherit; outline: none; cursor: pointer; margin-bottom: 6px; }
+.modal-hint { font-size: 0.78rem; color: #28a745; margin-bottom: 18px; }
+.upload-area { border: 2px dashed #d1d5db; border-radius: 10px; padding: 36px 20px; text-align: center; cursor: pointer; background: #fafafa; transition: border-color 0.2s, background 0.2s; margin-bottom: 14px; }
+.upload-area:hover, .upload-area.drag { border-color: #28a745; background: #f0fdf4; }
+.upload-area i { font-size: 2.2rem; color: #94a3b8; display: block; margin-bottom: 12px; }
+.upload-area .upload-cta { font-size: 0.92rem; color: #475569; }
+.upload-area .upload-cta span { color: #28a745; font-weight: 700; cursor: pointer; }
+.upload-area .upload-fmt { font-size: 0.8rem; color: #28a745; margin-top: 6px; }
+.upload-area .upload-filename { font-size: 0.88rem; color: #28a745; font-weight: 600; margin-top: 8px; }
+.modal-warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; font-size: 0.83rem; color: #92400e; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.modal-info { background: #eff6ff; border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; }
+.modal-info strong { font-size: 0.85rem; color: #1e40af; }
+.modal-info ul { margin: 8px 0 0; padding-left: 16px; }
+.modal-info li { font-size: 0.8rem; color: #3b82f6; margin-bottom: 3px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.btn-modal-cancel { padding: 9px 22px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; font-size: 0.9rem; color: #475569; cursor: pointer; font-weight: 600; }
+.btn-modal-cancel:hover { background: #f1f5f9; }
+.btn-modal-import { padding: 9px 22px; background: #28a745; color: #fff; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+.btn-modal-import:hover { background: #1c7c34; }
+.btn-modal-import:disabled { background: #94a3b8; cursor: not-allowed; }
+.theme-dark .modal-box { background: #1e293b; }
+.theme-dark .modal-title { color: #f1f5f9; }
+.theme-dark .modal-select { background: #0f172a; border-color: #28a745; color: #f1f5f9; }
+.theme-dark .upload-area { background: #0f172a; border-color: #334155; }
+.theme-dark .modal-warn { background: #1c1505; border-color: #854d0e; color: #fbbf24; }
+.theme-dark .modal-info { background: #0c1a3a; }
+.bd-stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.bd-stat-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+  padding: 20px 22px; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s;
+}
+.bd-stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.bd-card-left { display: flex; flex-direction: column; gap: 2px; }
+.bd-stat-title { font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+.bd-stat-value { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.bd-stat-sub { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
+.bd-card-icon { font-size: 2.4rem; opacity: 0.18; flex-shrink: 0; margin-top: 4px; }
+.bd-card-teal .bd-stat-value { color: #0d9488; }
+.bd-card-teal .bd-card-icon { color: #0d9488; }
+.bd-card-teal { border-bottom: 3px solid #0d9488; }
+.bd-card-green .bd-stat-value { color: #16a34a; }
+.bd-card-green .bd-card-icon { color: #16a34a; }
+.bd-card-green { border-bottom: 3px solid #16a34a; }
+.bd-card-red .bd-stat-value { color: #ef4444; }
+.bd-card-red .bd-card-icon { color: #ef4444; }
+.bd-card-red { border-bottom: 3px solid #ef4444; }
+.bd-card-purple .bd-stat-value { color: #8b5cf6; }
+.bd-card-purple .bd-card-icon { color: #8b5cf6; }
+.bd-card-purple { border-bottom: 3px solid #8b5cf6; }
+/* legado - manter .bd-stat-label para compatibilidade */
+.bd-stat-label { font-size: 0.78rem; color: #64748b; font-weight: 500; }
+.bd-filter-bar{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.bd-filter-bar label{font-size:0.82rem;font-weight:600;color:#374151;}
+.bd-select,.bd-input{padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;color:#1e293b;background:#fff;outline:none;font-family:inherit;}
+.bd-select:focus,.bd-input:focus{border-color:#28a745;box-shadow:0 0 0 3px rgba(40,167,69,0.1);}
+.bd-input{min-width:200px;} .bd-search-wrap{position:relative;} .bd-search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:0.85rem;} .bd-search-wrap .bd-input{padding-left:32px;}
+.btn-bd-filtrar{padding:8px 18px;background:#28a745;color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 0.2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-bd-filtrar:hover{background:#1c7c34;}
+.btn-bd-limpar{padding:8px 14px;background:none;color:#64748b;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.btn-bd-limpar:hover{background:#f1f5f9;}
+.bd-table-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
+.bd-table-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f1f5f9;}
+.bd-table-title{font-size:0.95rem;font-weight:700;color:#1e293b;display:flex;align-items:center;gap:8px;}
+.bd-table-title i{color:#28a745;}
+.bd-count-badge{background:#eaf7ed;color:#28a745;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:10px;}
+.bd-table{width:100%;border-collapse:collapse;}
+.bd-table thead th{text-align:left;padding:11px 16px;font-size:0.78rem;font-weight:700;color:#28a745;background:#f8fafc;border-bottom:1px solid #e2e8f0;white-space:nowrap;}
+.bd-table tbody td{padding:12px 16px;font-size:0.85rem;color:#374151;border-bottom:1px solid #f1f5f9;white-space:nowrap;}
+.bd-table tbody tr:last-child td{border-bottom:none;} .bd-table tbody tr:hover td{background:#f8fafc;}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;}
+.status-badge.pendente{background:#fff3e0;color:#f97316;} .status-badge.atribuido{background:#eaf7ed;color:#28a745;}
+.bd-pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #f1f5f9;font-size:0.82rem;color:#64748b;}
+.bd-page-btns{display:flex;gap:6px;}
+.btn-page{width:36px;height:36px;border:1px solid #e2e8f0;background:#fff;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:#475569;font-weight:600;transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);box-shadow: 0 1px 2px rgba(0,0,0,0.05);}
+.btn-page:hover:not(:disabled){background:#f8fafc;border-color:#cbd5e1;color:#1e293b;transform: translateY(-1px);}
+.btn-page.active{background:#28a745;color:#fff;border-color:#28a745;box-shadow: 0 4px 12px rgba(40,167,69,0.25);}
+.btn-page:disabled{opacity:0.4;cursor:not-allowed;background:#f1f5f9;}
+.bd-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:#94a3b8;gap:10px;}
+.bd-empty i{font-size:3rem;} .bd-empty p{margin:0;font-size:0.9rem;}
+.theme-dark .bd-stat-card,.theme-dark .bd-filter-bar,.theme-dark .bd-table-card{background:#1e293b;border-color:#334155;}
+.theme-dark .bd-stat-value,.theme-dark .bd-table-title{color:inherit;}
+.theme-dark .bd-stat-title,.theme-dark .bd-stat-sub{color:#94a3b8;}
+.theme-dark .bd-select,.theme-dark .bd-input{background:#0f172a;border-color:#334155;color:#f1f5f9;}
+.theme-dark .bd-table thead th{background:#0f172a;border-bottom-color:#334155;}
+.theme-dark .bd-table tbody td{color:#cbd5e1;border-bottom-color:#1e293b;}
+.theme-dark .bd-table tbody tr:hover td{background:#0f172a;}
+.theme-dark .bd-pagination,.theme-dark .bd-table-header{border-color:#334155;}
+.theme-dark .btn-page{background:#1e293b;border-color:#475569;color:#94a3b8;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-content-inner">
+  <p style="color:#28a745;font-size:0.95rem;margin-top:-20px;margin-bottom:24px;">Visualize e gerencie todos os clientes importados no sistema</p>
+
+  <div class="bd-stats-row">
+    <!-- Total de Registros -->
+    <div class="bd-stat-card bd-card-teal">
+      <div class="bd-card-left">
+        <div class="bd-stat-title">Total de Registros</div>
+        <div class="bd-stat-value" id="bdTotal">--</div>
+        <div class="bd-stat-sub" id="bdTotalSub">Registros filtrados</div>
+      </div>
+      <div class="bd-card-icon"><i class="fas fa-database"></i></div>
+    </div>
+    <!-- Elegíveis -->
+    <div class="bd-stat-card bd-card-green">
+      <div class="bd-card-left">
+        <div class="bd-stat-title">Elegíveis</div>
+        <div class="bd-stat-value" id="bdElegiveis">--</div>
+        <div class="bd-stat-sub" id="bdElegPct">-- % do total</div>
+      </div>
+      <div class="bd-card-icon"><i class="fas fa-check-circle"></i></div>
+    </div>
+    <!-- Não Elegíveis -->
+    <div class="bd-stat-card bd-card-red">
+      <div class="bd-card-left">
+        <div class="bd-stat-title">Não Elegíveis</div>
+        <div class="bd-stat-value" id="bdNaoElegiveis">--</div>
+        <div class="bd-stat-sub" id="bdNaoElegPct">-- % do total</div>
+      </div>
+      <div class="bd-card-icon"><i class="fas fa-times-circle"></i></div>
+    </div>
+    <!-- Vendedores -->
+    <div class="bd-stat-card bd-card-purple">
+      <div class="bd-card-left">
+        <div class="bd-stat-title">Vendedores</div>
+        <div class="bd-stat-value" id="bdVendedores">--</div>
+        <div class="bd-stat-sub">Vendedores ativos</div>
+      </div>
+      <div class="bd-card-icon"><i class="fas fa-users"></i></div>
+    </div>
+  </div>
+
+  <div class="bd-filter-bar">
+    <label>Banco:</label>
+    <select class="bd-select" id="filtroBanco"><option value="">Todos os bancos</option></select>
+    <label>Status:</label>
+    <select class="bd-select" id="filtroStatus">
+      <option value="">Todos</option>
+      <option value="atribuido">Atribuído</option>
+      <option value="elegivel">Elegível</option>
+      <option value="nao_elegivel">Não Elegível</option>
+    </select>
+    <div class="bd-search-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" class="bd-input" id="filtroNome" placeholder="Buscar nome ou CPF...">
+    </div>
+    <button class="btn-bd-limpar" id="btnLimpar">Limpar Filtros</button>
+  </div>
+
+  <div class="bd-table-card">
+    <div class="bd-table-header">
+      <div class="bd-table-title"><i class="fas fa-database"></i> Clientes no Sistema <span class="bd-count-badge" id="bdContador">0</span></div>
+    </div>
+    <table class="bd-table">
+      <thead><tr><th>#</th><th>Nome</th><th>CPF</th><th>Telefone</th><th>Banco</th><th>Margem</th><th>Status</th><th>Vendedor</th></tr></thead>
+      <tbody id="bdTableBody">
+        <tr><td colspan="8"><div class="bd-empty"><i class="fas fa-spinner fa-spin" style="color:#28a745"></i><p>Carregando...</p></div></td></tr>
+      </tbody>
+    </table>
+    <div class="bd-pagination">
+      <span id="bdPagInfo">–</span>
+      <div class="bd-page-btns" id="bdPageBtns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Importar Excel -->
+<div class="modal-overlay" id="modalImportar">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModalImportar()"><i class="fas fa-times"></i></button>
+    <h2 class="modal-title">Importar Planilha Excel</h2>
+    <p class="modal-subtitle">
+      Faça upload de uma planilha Excel (.xlsx, .xls) com os dados dos clientes.
+      Os campos obrigatórios são: <strong>NOME, CPF, pelo menos um TELEFONE e MARGEM</strong>.
+    </p>
+    <label class="modal-label">Banco / Base de Dados <span style="color:#ef4444;">*</span></label>
+    <select class="modal-select" id="modalBancoSelect">
+      <option value="">Selecione o banco desta importação...</option>
+    </select>
+    <p class="modal-hint">Escolha o banco para organizar e filtrar os clientes por base</p>
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <i class="fas fa-file-excel"></i>
+      <div class="upload-cta"><span>Clique para selecionar</span> ou arraste o arquivo aqui</div>
+      <div class="upload-fmt">Formatos suportados: .xlsx, .xls</div>
+      <div class="upload-filename" id="uploadFilename" style="display:none;"></div>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
+    <div class="modal-warn" id="modalWarn">
+      <i class="fas fa-exclamation-triangle"></i>
+      Selecione um banco antes de fazer o upload
+    </div>
+    <div class="modal-info">
+      <strong>🟥 Campos Obrigatórios:</strong>
+      <ul>
+        <li><strong>NOME</strong> - Nome completo do cliente</li>
+        <li><strong>CPF</strong> - CPF no formato 000.000.000-00</li>
+        <li><strong>TELEFONE1</strong> - Telefone principal com DDD</li>
+        <li><strong>MARGEM</strong> - Valor da margem disponível</li>
+      </ul>
+      <strong style="display:block;margin-top:10px;color:#64748b;">🔵 Campos Opcionais:</strong>
+      <ul style="color:#64748b;">
+        <li>TELEFONE2, TELEFONE3, TELEFONE4</li>
+        <li>WHATSAPP, SEXO, IDADE</li>
+        <li>RUA, BAIRRO, CEP, CIDADE, ESTADO</li>
+      </ul>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="fecharModalImportar()">Cancelar</button>
+      <button class="btn-modal-import" id="btnConfirmarImport" disabled>
+        <i class="fas fa-file-upload"></i> Importar Dados
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Exportar Excel -->
+<div class="modal-exp-overlay" id="modalExportar">
+  <div class="modal-exp-box">
+    <div class="modal-exp-header">
+      <i class="fas fa-filter"></i> Filtros de Exportação
+    </div>
+    <div class="modal-exp-row">
+      <div class="modal-exp-group">
+        <label>Data Inicial</label>
+        <input type="date" class="modal-exp-input" id="expDataInicio" placeholder="Selecione a data inicial">
+      </div>
+      <div class="modal-exp-group">
+        <label>Data Final</label>
+        <input type="date" class="modal-exp-input" id="expDataFim" placeholder="Selecione a data final">
+      </div>
+    </div>
+    <div class="modal-exp-row3">
+      <div class="modal-exp-group">
+        <label>Base de Dados</label>
+        <select class="modal-exp-select" id="expBanco">
+          <option value="">Todas as Bases</option>
+        </select>
+      </div>
+      <div class="modal-exp-group">
+        <label>Vendedor</label>
+        <select class="modal-exp-select" id="expVendedor">
+          <option value="">Todos os Vendedores</option>
+        </select>
+      </div>
+      <div class="modal-exp-group">
+        <label>Status</label>
+        <select class="modal-exp-select" id="expStatus">
+          <option value="">Todos os Status</option>
+          <option value="atribuido">Atribuído</option>
+          <option value="elegivel">Elegível</option>
+          <option value="nao_elegivel">Não Elegível</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-exp-footer">
+      <span class="modal-exp-count" id="expContador">0 registro(s) encontrado(s)</span>
+      <div class="modal-exp-actions">
+        <button class="btn-exp-limpar" onclick="limparFiltrosExp()">Limpar Filtros</button>
+        <button class="btn-exp-baixar" onclick="executarExportacao()">
+          <i class="fas fa-download"></i> Exportar Excel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Gerenciar Lotes -->
+<div class="modal-exp-overlay" id="modalLotes">
+  <div class="modal-exp-box" style="max-width: 800px;">
+    <div class="modal-exp-header" style="justify-content: space-between;">
+      <span><i class="fas fa-boxes"></i> Lotes Importados</span>
+      <button class="modal-close" onclick="fecharModalLotes()" style="position:relative; top:0; right:0;"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="display:flex; gap:12px; margin-bottom: 16px; align-items:center; flex-wrap:wrap; background:#f8fafc; padding:12px; border-radius:10px; border:1px solid #f1f5f9;">
+      <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+        <label style="font-size:0.75rem; font-weight:700; color:#64748b;">Filtrar por Banco</label>
+        <select id="filtroLoteBanco" class="modal-exp-select" onchange="renderLotes()">
+          <option value="">Todos os Bancos</option>
+        </select>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+        <label style="font-size:0.75rem; font-weight:700; color:#64748b;">Data da Importação</label>
+        <input type="date" id="filtroLoteData" class="modal-exp-input" onchange="renderLotes()">
+      </div>
+      <div style="display:flex; align-items:flex-end; padding-bottom:2px;">
+        <button onclick="limparFiltrosLote()" style="padding: 9px 16px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; cursor:pointer; font-weight:600; color:#475569; font-size:0.85rem; transition:0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">Limpar</button>
+      </div>
+    </div>
+    <div style="max-height: 400px; overflow-y: auto;">
+      <table class="bd-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Arquivo</th>
+            <th>Banco</th>
+            <th>Leads</th>
+            <th>Data</th>
+            <th style="text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lotesTableBody">
+          <tr><td colspan="5"><div class="bd-empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- SheetJS para exportação Excel -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script>
+let paginaAtual = 1; 
+const porPagina = 20; 
+let todosClientes = []; 
+let clientesFiltrados = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  carregarBancos(); 
+  carregarStats(); 
+  carregarClientes();
+  
+  // Filtro Automático nos Selects
+  document.getElementById('filtroBanco').addEventListener('change', aplicarFiltro);
+  document.getElementById('filtroStatus').addEventListener('change', aplicarFiltro);
+  
+  // Filtro Automático na Busca (com pequeno delay para não travar ao digitar)
+  let searchTimer;
+  document.getElementById('filtroNome').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(aplicarFiltro, 300);
+  });
+
+  document.getElementById('btnLimpar').addEventListener('click', () => {
+    document.getElementById('filtroBanco').value = '';
+    document.getElementById('filtroStatus').value = '';
+    document.getElementById('filtroNome').value = '';
+    clientesFiltrados = [...todosClientes]; 
+    paginaAtual = 1; 
+    renderTabela();
+  });
+});
+
+function carregarBancos() {
+  fetch('/api/bancos').then(r => r.json()).then(d => {
+    if(d.success) { 
+      const sel = document.getElementById('filtroBanco');
+      d.bancos.forEach(b => {
+        const o = document.createElement('option');
+        o.value = b.id;
+        o.textContent = b.nome;
+        sel.appendChild(o);
+      });
+    }
+  });
+}
+
+function carregarStats() {
+  fetch('/api/admin_stats').then(r => r.json()).then(d => {
+    if(d.success) {
+      document.getElementById('bdVendedores').textContent = d.stats.vendedores_ativos;
+    }
+  });
+}
+
+function carregarClientes() {
+  fetch('/api/clientes').then(r => r.json()).then(d => {
+    if(d.success) { 
+      todosClientes = d.clientes; 
+      clientesFiltrados = [...todosClientes]; 
+      paginaAtual = 1; 
+      renderTabela(); 
+    } else { 
+      document.getElementById('bdTableBody').innerHTML = '<tr><td colspan="8"><div class="bd-empty"><i class="fas fa-database"></i><p>Nenhum cliente cadastrado.</p></div></td></tr>'; 
+    }
+  }).catch(() => {
+    document.getElementById('bdTableBody').innerHTML = '<tr><td colspan="8"><div class="bd-empty"><i class="fas fa-database"></i><p>Erro ao carregar clientes.</p></div></td></tr>';
+  });
+}
+
+function formatarCPF(cpf) {
+  if (!cpf) return '--';
+  let s = String(cpf).replace(/\D/g, '');
+  if (s.length === 0) return cpf;
+  // Padroniza para 11 dígitos caso venha incompleto do Excel (ex: sem zeros à esquerda)
+  s = s.padStart(11, '0');
+  return s.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
+
+function formatarTelefone(tel) {
+  if (!tel) return '--';
+  let s = String(tel).replace(/\D/g, '');
+  if (s.length === 11) {
+    return s.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  } else if (s.length === 10) {
+    return s.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  }
+  return tel;
+}
+
+function aplicarFiltro(){
+  const bancoId = document.getElementById('filtroBanco').value;
+  const status = document.getElementById('filtroStatus').value;
+  const nomeBusca = document.getElementById('filtroNome').value.toLowerCase().trim();
+  
+  const selBanco = document.getElementById('filtroBanco');
+  const nomeBancoSelecionado = selBanco.selectedIndex > 0 ? selBanco.options[selBanco.selectedIndex].text.toLowerCase().trim() : "";
+
+  clientesFiltrados = todosClientes.filter(c => {
+    // Se o usuário digitou algo na busca, vamos procurar em múltiplos campos
+    let matchBusca = true;
+    if (nomeBusca) {
+      const termo = nomeBusca.replace(/\D/g, ''); // Termo apenas números para CPF/Tel
+      const nomeC = (c.nome || "").toLowerCase();
+      const cpfC = String(c.cpf || "").replace(/\D/g, "");
+      const telC = String(c.telefone1 || "").replace(/\D/g, "");
+      const bancoC = (c.banco_nome || "").toLowerCase();
+      const vendC = (c.vendedor_nome || "").toLowerCase();
+
+      matchBusca = nomeC.includes(nomeBusca) || 
+                   (termo && cpfC.includes(termo)) || 
+                   (termo && telC.includes(termo)) ||
+                   bancoC.includes(nomeBusca) ||
+                   vendC.includes(nomeBusca);
+    }
+
+    // Filtros de Select (só aplicam se a busca estiver vazia ou se quisermos manter a cumulatividade)
+    // Decisão: Manter cumulatividade, mas garantir que a busca olhe em tudo.
+    let matchBanco = true;
+    if (bancoId) {
+      matchBanco = String(c.banco_id || '') === String(bancoId);
+    }
+    
+    let matchStatus = true;
+    if (status) {
+      const s = (c.status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (status === 'atribuido')   matchStatus = s === 'atribuido';
+      else if (status === 'elegivel')     matchStatus = s.includes('elegiv') && !s.includes('nao') && !s.includes('não');
+      else if (status === 'nao_elegivel') matchStatus = (s.includes('nao') || s.includes('não')) && s.includes('elegiv');
+      else matchStatus = s === status;
+    }
+    
+    return matchBusca && matchBanco && matchStatus;
+  });
+  
+  paginaAtual = 1; 
+  renderTabela();
+}
+
+function renderTabela(){
+  const total = clientesFiltrados.length; 
+  const totalPags = Math.ceil(total / porPagina) || 1;
+  const inicio = (paginaAtual - 1) * porPagina; 
+  const fim = Math.min(inicio + porPagina, total);
+  const pagina = clientesFiltrados.slice(inicio, fim);
+
+  // ── Atualiza cards dinamicamente ──
+  const elegiveis = clientesFiltrados.filter(c => {
+    const s = (c.status || '').toLowerCase();
+    return s.includes('eleg') && !s.includes('não') && !s.includes('nao');
+  }).length;
+  const naoElegiveis = clientesFiltrados.filter(c => {
+    const s = (c.status || '').toLowerCase();
+    return (s.includes('não') || s.includes('nao')) && s.includes('eleg');
+  }).length;
+  const pctEleg = total > 0 ? ((elegiveis / total) * 100).toFixed(1) : '0.0';
+  const pctNao  = total > 0 ? ((naoElegiveis / total) * 100).toFixed(1) : '0.0';
+
+  document.getElementById('bdTotal').textContent = total;
+  document.getElementById('bdTotalSub').textContent = total === todosClientes.length ? 'Total no sistema' : 'Registros filtrados';
+  document.getElementById('bdElegiveis').textContent = elegiveis;
+  document.getElementById('bdElegPct').textContent = `${pctEleg}% do total`;
+  document.getElementById('bdNaoElegiveis').textContent = naoElegiveis;
+  document.getElementById('bdNaoElegPct').textContent = `${pctNao}% do total`;
+
+  document.getElementById('bdContador').textContent = total;
+  document.getElementById('bdPagInfo').textContent = `Mostrando ${total > 0 ? inicio + 1 : 0}–${fim} de ${total}`;
+
+  
+  const tbody = document.getElementById('bdTableBody');
+  if (!pagina.length) { 
+    tbody.innerHTML = '<tr><td colspan="8"><div class="bd-empty"><i class="fas fa-search"></i><p>Nenhum cliente encontrado.</p></div></td></tr>'; 
+  } else { 
+    tbody.innerHTML = pagina.map((c, i) => `<tr>
+      <td style="color:#94a3b8;font-size:0.78rem">${inicio + i + 1}</td>
+      <td><strong>${c.nome || '--'}</strong></td>
+      <td style="font-family:monospace">${formatarCPF(c.cpf)}</td>
+      <td>${formatarTelefone(c.telefone1)}</td>
+      <td>${c.banco_nome || '--'}</td>
+      <td style="color:#28a745;font-weight:700">${c.margem ? 'R$ ' + Number(c.margem).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '--'}</td>
+      <td><span class="status-badge ${c.status || 'pendente'}">${c.status || 'pendente'}</span></td>
+      <td>${c.vendedor_nome || '<span style="color:#94a3b8">—</span>'}</td>
+    </tr>`).join(''); 
+  }
+  
+  const bc = document.getElementById('bdPageBtns'); 
+  bc.innerHTML = '';
+  
+  if (totalPags > 1) {
+    // Botão Anterior
+    const btnPrev = document.createElement('button');
+    btnPrev.className = 'btn-page';
+    btnPrev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    btnPrev.disabled = paginaAtual === 1;
+    btnPrev.onclick = () => { if(paginaAtual > 1) { paginaAtual--; renderTabela(); } };
+    bc.appendChild(btnPrev);
+
+    // Páginas numéricas
+    let startPage = Math.max(1, paginaAtual - 2);
+    let endPage = Math.min(totalPags, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+    if (startPage < 1) startPage = 1;
+
+    for (let p = startPage; p <= endPage; p++) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-page' + (p === paginaAtual ? ' active' : '');
+      btn.textContent = p; 
+      btn.onclick = () => { paginaAtual = p; renderTabela(); };
+      bc.appendChild(btn);
+    }
+
+    // Botão Próximo
+    const btnNext = document.createElement('button');
+    btnNext.className = 'btn-page';
+    btnNext.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    btnNext.disabled = paginaAtual === totalPags;
+    btnNext.onclick = () => { if(paginaAtual < totalPags) { paginaAtual++; renderTabela(); } };
+    bc.appendChild(btnNext);
+  }
+}
+
+// ── Exportar Excel ──
+function exportarExcel() {
+  if (!clientesFiltrados || clientesFiltrados.length === 0) {
+    alert('Nenhum dado para exportar com os filtros atuais.');
+    return;
+  }
+
+  // Monta os dados formatados
+  const linhas = clientesFiltrados.map((c, i) => ({
+    '#': i + 1,
+    'Nome': c.nome || '',
+    'CPF': formatarCPF(c.cpf),
+    'Telefone 1': formatarTelefone(c.telefone1),
+    'Telefone 2': formatarTelefone(c.telefone2),
+    'Banco': c.banco_nome || '',
+    'Margem (R$)': c.margem ? Number(c.margem).toFixed(2) : '',
+    'Status': c.status || 'pendente',
+    'Vendedor': c.vendedor_nome || '',
+    'Importado em': c.importado_em || ''
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(linhas);
+
+  // Ajusta a largura das colunas automaticamente
+  const colWidths = Object.keys(linhas[0]).map(k => ({
+    wch: Math.max(k.length, ...linhas.map(r => String(r[k] || '').length)) + 2
+  }));
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+
+  // Nome do arquivo com data e filtros aplicados
+  const bancoSel = document.getElementById('filtroBanco');
+  const statusSel = document.getElementById('filtroStatus');
+  const nomeFiltro = document.getElementById('filtroNome').value.trim();
+  const bancoPart = bancoSel.selectedIndex > 0 ? '_' + bancoSel.options[bancoSel.selectedIndex].text.replace(/\s+/g,'') : '';
+  const statusPart = statusSel.value ? '_' + statusSel.value : '';
+  const nomesPart = nomeFiltro ? '_busca' : '';
+  const hoje = new Date().toISOString().slice(0,10);
+  const nomeArquivo = `clientes${bancoPart}${statusPart}${nomesPart}_${hoje}.xlsx`;
+
+  XLSX.writeFile(wb, nomeArquivo);
+}
+
+// ── Modal Exportar ──
+function abrirModalExportar() {
+  const modal = document.getElementById('modalExportar');
+  modal.classList.add('open');
+  popularFiltrosExp();
+  atualizarContadorExp();
+
+  // Fechar ao clicar fora
+  modal.onclick = e => { if (e.target === modal) fecharModalExportar(); };
+}
+
+function fecharModalExportar() {
+  document.getElementById('modalExportar').classList.remove('open');
+}
+
+function popularFiltrosExp() {
+  // Bancos
+  const selBanco = document.getElementById('expBanco');
+  selBanco.innerHTML = '<option value="">Todas as Bases</option>';
+  fetch('/api/bancos').then(r => r.json()).then(d => {
+    if (d.success) d.bancos.forEach(b => {
+      selBanco.insertAdjacentHTML('beforeend', `<option value="${b.id}">${b.nome}</option>`);
+    });
+  });
+
+  // Vendedores (a partir dos dados já carregados)
+  const selVend = document.getElementById('expVendedor');
+  selVend.innerHTML = '<option value="">Todos os Vendedores</option>';
+  const vendedores = [...new Set(todosClientes.map(c => c.vendedor_nome).filter(Boolean))].sort();
+  vendedores.forEach(v => {
+    selVend.insertAdjacentHTML('beforeend', `<option value="${v}">${v}</option>`);
+  });
+
+  // Listeners para atualizar contador
+  ['expDataInicio','expDataFim','expBanco','expVendedor','expStatus'].forEach(id => {
+    document.getElementById(id).addEventListener('change', atualizarContadorExp);
+    document.getElementById(id).addEventListener('input', atualizarContadorExp);
+  });
+}
+
+function filtrarParaExportar() {
+  const dataIni = document.getElementById('expDataInicio').value;
+  const dataFim = document.getElementById('expDataFim').value;
+  const bancoId = document.getElementById('expBanco').value;
+  const vendedor = document.getElementById('expVendedor').value;
+  const status = document.getElementById('expStatus').value;
+
+  return todosClientes.filter(c => {
+    if (bancoId && String(c.banco_id) !== String(bancoId)) return false;
+    if (vendedor && c.vendedor_nome !== vendedor) return false;
+    if (status) {
+      const s = (c.status || '').toLowerCase();
+      if (status === 'elegivel' && (!s.includes('eleg') || s.includes('não'))) return false;
+      if (status === 'nao_elegivel' && !(s.includes('não') && s.includes('eleg'))) return false;
+      if (status === 'pendente' && s !== 'pendente') return false;
+      if (status === 'atribuido' && s !== 'atribuido') return false;
+    }
+    if (dataIni || dataFim) {
+      const importado = (c.importado_em || '').slice(0, 10);
+      if (dataIni && importado < dataIni) return false;
+      if (dataFim && importado > dataFim) return false;
+    }
+    return true;
+  });
+}
+
+function atualizarContadorExp() {
+  const resultado = filtrarParaExportar();
+  document.getElementById('expContador').textContent = `${resultado.length} registro(s) encontrado(s)`;
+}
+
+function limparFiltrosExp() {
+  ['expDataInicio','expDataFim','expBanco','expVendedor','expStatus'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  atualizarContadorExp();
+}
+
+function executarExportacao() {
+  const dados = filtrarParaExportar();
+  if (!dados.length) { alert('Nenhum registro encontrado com os filtros selecionados.'); return; }
+
+  const linhas = dados.map((c, i) => ({
+    '#': i + 1,
+    'Nome': c.nome || '',
+    'CPF': formatarCPF(c.cpf),
+    'Telefone 1': formatarTelefone(c.telefone1),
+    'Telefone 2': formatarTelefone(c.telefone2),
+    'Banco / Base': c.banco_nome || '',
+    'Margem (R$)': c.margem ? Number(c.margem).toFixed(2) : '',
+    'Status': c.status || 'pendente',
+    'Vendedor': c.vendedor_nome || '',
+    'Importado em': (c.importado_em || '').slice(0, 10)
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  const colWidths = Object.keys(linhas[0]).map(k => ({
+    wch: Math.max(k.length, ...linhas.map(r => String(r[k] || '').length)) + 2
+  }));
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+
+  const hoje = new Date().toISOString().slice(0, 10);
+  const bancoPart = document.getElementById('expBanco').selectedIndex > 0
+    ? '_' + document.getElementById('expBanco').options[document.getElementById('expBanco').selectedIndex].text.replace(/\s+/g, '') : '';
+  const statusPart = document.getElementById('expStatus').value ? '_' + document.getElementById('expStatus').value : '';
+  XLSX.writeFile(wb, `clientes${bancoPart}${statusPart}_${hoje}.xlsx`);
+
+  fecharModalExportar();
+}
+
+// ── Modal Importar ──
+function abrirModalImportar() {
+  document.getElementById('modalImportar').classList.add('open');
+  carregarBancosModal();
+}
+
+function fecharModalImportar() {
+  document.getElementById('modalImportar').classList.remove('open');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('uploadFilename').style.display = 'none';
+  document.getElementById('uploadFilename').textContent = '';
+  document.getElementById('btnConfirmarImport').disabled = true;
+  document.getElementById('modalWarn').style.display = 'flex';
+  document.getElementById('modalBancoSelect').value = '';
+}
+
+function carregarBancosModal() {
+  fetch('/api/bancos').then(r => r.json()).then(data => {
+    const sel = document.getElementById('modalBancoSelect');
+    sel.innerHTML = '<option value="">Selecione o banco desta importação...</option>';
+    if (data.success && data.bancos.length > 0) {
+      data.bancos.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = b.nome + (b.codigo ? ` (${b.codigo})` : '');
+        sel.appendChild(opt);
+      });
+    } else {
+      const opt = document.createElement('option');
+      opt.value = ''; opt.textContent = '-- Nenhum banco cadastrado --'; opt.disabled = true;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function verificarModalReady() {
+  const banco = document.getElementById('modalBancoSelect').value;
+  const arquivo = document.getElementById('fileInput').files.length > 0;
+  const btn = document.getElementById('btnConfirmarImport');
+  const warn = document.getElementById('modalWarn');
+  btn.disabled = !(banco && arquivo);
+  warn.style.display = banco ? 'none' : 'flex';
+}
+
+document.getElementById('modalBancoSelect').addEventListener('change', verificarModalReady);
+
+document.getElementById('fileInput').addEventListener('change', function() {
+  if (this.files.length > 0) {
+    const fn = document.getElementById('uploadFilename');
+    fn.textContent = '✅ ' + this.files[0].name;
+    fn.style.display = 'block';
+  }
+  verificarModalReady();
+});
+
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault(); uploadArea.classList.remove('drag');
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    document.getElementById('fileInput').files = files;
+    const fn = document.getElementById('uploadFilename');
+    fn.textContent = '✅ ' + files[0].name;
+    fn.style.display = 'block';
+    verificarModalReady();
+  }
+});
+
+document.getElementById('modalImportar').addEventListener('click', function(e) {
+  if (e.target === this) fecharModalImportar();
+});
+
+document.getElementById('btnConfirmarImport').addEventListener('click', () => {
+  const banco_id = document.getElementById('modalBancoSelect').value;
+  const files = document.getElementById('fileInput').files;
+  if (!banco_id || files.length === 0) return;
+
+  const formData = new FormData();
+  formData.append('file', files[0]);
+  formData.append('banco_id', banco_id);
+
+  const btn = document.getElementById('btnConfirmarImport');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
+
+  fetch('/api/importar_excel', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert('✅ ' + data.message);
+        fecharModalImportar();
+        carregarStats();
+        carregarClientes();
+        carregarBancos();
+      } else {
+        alert('❌ Erro: ' + (data.message || 'Erro ao importar'));
+      }
+    })
+    .catch(() => alert('❌ Erro na comunicação com o servidor.'))
+    .finally(() => {
+      btn.innerHTML = '<i class="fas fa-file-upload"></i> Importar Dados';
+      btn.disabled = false;
+    });
+});
+
+// ── Modal Gerenciar Lotes ──
+let todosLotesData = []; // Para guardar os lotes vindos do servidor
+
+function abrirModalLotes() {
+  document.getElementById('modalLotes').classList.add('open');
+  popularBancosFiltroLotes();
+  carregarLotes();
+}
+
+function fecharModalLotes() {
+  document.getElementById('modalLotes').classList.remove('open');
+}
+
+function popularBancosFiltroLotes() {
+  const selBanco = document.getElementById('filtroLoteBanco');
+  selBanco.innerHTML = '<option value="">Todos os Bancos</option>';
+  fetch('/api/bancos').then(r => r.json()).then(d => {
+    if (d.success) d.bancos.forEach(b => {
+      selBanco.insertAdjacentHTML('beforeend', `<option value="${b.id}">${b.nome}</option>`);
+    });
+  });
+}
+
+function carregarLotes() {
+  const tbody = document.getElementById('lotesTableBody');
+  tbody.innerHTML = '<tr><td colspan="5"><div class="bd-empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando lotes...</p></div></td></tr>';
+  
+  fetch('/api/lotes')
+    .then(r => r.json())
+    .then(data => {
+      if(data.success) {
+        todosLotesData = data.lotes;
+        renderLotes();
+      } else {
+        tbody.innerHTML = '<tr><td colspan="5"><div class="bd-empty"><i class="fas fa-exclamation-triangle"></i><p>Erro ao carregar lotes.</p></div></td></tr>';
+      }
+    }).catch(e => {
+        tbody.innerHTML = '<tr><td colspan="5"><div class="bd-empty"><i class="fas fa-wifi"></i><p>Erro de conexão.</p></div></td></tr>';
+    });
+}
+
+function renderLotes() {
+  const tbody = document.getElementById('lotesTableBody');
+  const filtroBanco = document.getElementById('filtroLoteBanco').value;
+  const filtroData = document.getElementById('filtroLoteData').value;
+
+  const lotesFiltrados = todosLotesData.filter(lote => {
+    let matchBanco = true;
+    let matchData = true;
+
+    if (filtroBanco) {
+      matchBanco = String(lote.banco_id) === String(filtroBanco);
+    }
+    
+    if (filtroData) {
+      // Comparar a data (yyyy-mm-dd). 'lote.criado_em' pode estar em formato Date ou string ISO.
+      const dataLote = (lote.criado_em || '').slice(0, 10);
+      matchData = dataLote === filtroData;
+    }
+
+    return matchBanco && matchData;
+  });
+
+  if(lotesFiltrados.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="bd-empty"><i class="fas fa-boxes"></i><p>Nenhum lote encontrado.</p></div></td></tr>';
+    return;
+  }
+  
+  let html = '';
+  lotesFiltrados.forEach(lote => {
+    const dataFormatada = new Date(lote.criado_em).toLocaleString('pt-BR');
+    html += `
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 12px; font-weight: 600; color: #1e293b;">${lote.nome_arquivo}</td>
+        <td style="padding: 12px;">${lote.banco_nome || '--'}</td>
+        <td style="padding: 12px;"><span class="bd-count-badge">${lote.quantidade_leads} leads</span></td>
+        <td style="padding: 12px; font-size: 0.8rem; color: #64748b;">${dataFormatada}</td>
+        <td style="padding: 12px; text-align: right;">
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button onclick="baixarLote(${lote.id})" title="Baixar Arquivo" style="padding: 8px 12px; background: #eaf7ed; color: #28a745; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s;"><i class="fas fa-download"></i></button>
+            <button onclick="excluirLote(${lote.id})" title="Excluir Lote e Leads" style="padding: 8px 12px; background: #fee2e2; color: #ef4444; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s;"><i class="fas fa-trash"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+}
+
+function limparFiltrosLote() {
+  document.getElementById('filtroLoteBanco').value = '';
+  document.getElementById('filtroLoteData').value = '';
+  renderLotes();
+}
+
+function baixarLote(id) {
+  window.location.href = `/api/lotes/download/${id}`;
+}
+
+function excluirLote(id) {
+  if(!confirm("TEM CERTEZA? Isso excluirá o lote E TAMBÉM TODOS OS CLIENTES importados junto com ele. Essa ação não pode ser desfeita.")) return;
+  
+  fetch(`/api/lotes/${id}`, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(data => {
+      alert(data.message);
+      if(data.success) {
+        carregarLotes();
+        carregarClientes(); // Recarrega a tabela principal para refletir a exclusão
+        carregarStats(); // Atualiza contadores
+      }
+    });
+}
+
+document.getElementById('modalLotes').addEventListener('click', function(e) {
+  if (e.target === this) fecharModalLotes();
+});
+</script>
+{% endblock %}

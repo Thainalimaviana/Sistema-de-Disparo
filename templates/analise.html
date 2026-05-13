@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Análises - Consig Tech{% endblock %}
+{% block page_title %}Análises{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="dashboard-content-inner">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <div>
+        <h2 style="margin: 0; font-size: 1.5rem; color: var(--text-main); font-weight: 700;">Dashboard Analítico</h2>
+        <p style="color: #64748b; font-size: 0.95rem; margin: 5px 0 0;">Visualização e análise profunda de dados do sistema</p>
+    </div>
+    
+    <!-- Filtros -->
+    <div style="display: flex; gap: 10px; align-items: center; background: var(--bg-panel); padding: 10px 15px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-calendar-alt" style="color: var(--primary);"></i>
+            <input type="date" id="dataInicio" class="form-control" style="border: none; background: transparent; color: var(--text-main); font-size: 0.9rem; outline: none; padding: 0;">
+        </div>
+        <span style="color: #94a3b8;">até</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="date" id="dataFim" class="form-control" style="border: none; background: transparent; color: var(--text-main); font-size: 0.9rem; outline: none; padding: 0;">
+        </div>
+        <button onclick="carregarDashboardAnalitico()" style="background: var(--primary); color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;">
+            Filtrar
+        </button>
+    </div>
+  </div>
+
+  <!-- Grid de Gráficos -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px;">
+    
+    <!-- Chart 1: Status -->
+    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <h3 style="margin: 0 0 15px; font-size: 1.1rem; color: var(--text-main); font-weight: 600;"><i class="fas fa-chart-pie" style="color: #8b5cf6; margin-right: 8px;"></i> Distribuição de Status</h3>
+        <div style="height: 250px; position: relative;">
+            <canvas id="chartStatus"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: Bancos -->
+    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <h3 style="margin: 0 0 15px; font-size: 1.1rem; color: var(--text-main); font-weight: 600;"><i class="fas fa-university" style="color: #3b82f6; margin-right: 8px;"></i> Top Bancos (Volume)</h3>
+        <div style="height: 250px; position: relative;">
+            <canvas id="chartBancos"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 3: Evolução -->
+    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); grid-column: span 1;">
+        <h3 style="margin: 0 0 15px; font-size: 1.1rem; color: var(--text-main); font-weight: 600;"><i class="fas fa-chart-line" style="color: #10b981; margin-right: 8px;"></i> Evolução de Atendimentos</h3>
+        <div style="height: 250px; position: relative;">
+            <canvas id="chartEvolucao"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 4: Produtividade -->
+    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); grid-column: span 1;">
+        <h3 style="margin: 0 0 15px; font-size: 1.1rem; color: var(--text-main); font-weight: 600;"><i class="fas fa-trophy" style="color: #f59e0b; margin-right: 8px;"></i> Top Produtividade (Vendedores)</h3>
+        <div style="height: 250px; position: relative;">
+            <canvas id="chartProdutividade"></canvas>
+        </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+    // Configurações globais do Chart.js para se adaptar ao tema
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    
+    let charts = {};
+
+    function initCharts() {
+        // Cores vibrantes premium
+        const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
+        
+        // 1. Status (Doughnut)
+        const ctxStatus = document.getElementById('chartStatus').getContext('2d');
+        charts.status = new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: colors, borderWidth: 0 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 20 } } }
+            }
+        });
+
+        // 2. Bancos (Bar)
+        const ctxBancos = document.getElementById('chartBancos').getContext('2d');
+        charts.bancos = new Chart(ctxBancos, {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Leads', data: [], backgroundColor: '#3b82f6', borderRadius: 6 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false } },
+                    x: { grid: { display: false, drawBorder: false } }
+                }
+            }
+        });
+
+        // 3. Evolução (Line)
+        const ctxEvolucao = document.getElementById('chartEvolucao').getContext('2d');
+        // Criar gradiente para a linha
+        let gradientLine = ctxEvolucao.createLinearGradient(0, 0, 0, 250);
+        gradientLine.addColorStop(0, 'rgba(16, 185, 129, 0.5)');
+        gradientLine.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+        charts.evolucao = new Chart(ctxEvolucao, {
+            type: 'line',
+            data: { labels: [], datasets: [{ 
+                label: 'Atendimentos', data: [], 
+                borderColor: '#10b981', backgroundColor: gradientLine,
+                borderWidth: 3, fill: true, tension: 0.4,
+                pointBackgroundColor: '#fff', pointBorderColor: '#10b981', pointBorderWidth: 2, pointRadius: 4
+            }]},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false } },
+                    x: { grid: { display: false, drawBorder: false } }
+                }
+            }
+        });
+
+        // 4. Produtividade (Horizontal Bar)
+        const ctxProdutividade = document.getElementById('chartProdutividade').getContext('2d');
+        charts.produtividade = new Chart(ctxProdutividade, {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Tabulações', data: [], backgroundColor: '#f59e0b', borderRadius: 6 }] },
+            options: {
+                indexAxis: 'y', // Faz a barra ser horizontal
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false } },
+                    y: { grid: { display: false, drawBorder: false } }
+                }
+            }
+        });
+    }
+
+    function carregarDashboardAnalitico() {
+        const inicio = document.getElementById('dataInicio').value;
+        const fim = document.getElementById('dataFim').value;
+        let url = '/api/analytics_dashboard?1=1';
+        if (inicio) url += `&inicio=${inicio}`;
+        if (fim) url += `&fim=${fim}`;
+
+        fetch(url)
+            .then(r => r.json())
+            .then(resp => {
+                if(resp.success && resp.data) {
+                    const d = resp.data;
+                    
+                    // Atualiza Status
+                    charts.status.data.labels = d.leads_status.labels;
+                    charts.status.data.datasets[0].data = d.leads_status.data;
+                    charts.status.update();
+
+                    // Atualiza Bancos
+                    charts.bancos.data.labels = d.leads_banco.labels;
+                    charts.bancos.data.datasets[0].data = d.leads_banco.data;
+                    charts.bancos.update();
+
+                    // Atualiza Evolução
+                    charts.evolucao.data.labels = d.evolucao_diaria.labels;
+                    charts.evolucao.data.datasets[0].data = d.evolucao_diaria.data;
+                    charts.evolucao.update();
+
+                    // Atualiza Produtividade
+                    charts.produtividade.data.labels = d.prod_vendedores.labels;
+                    charts.produtividade.data.datasets[0].data = d.prod_vendedores.data;
+                    charts.produtividade.update();
+                }
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Seta data inicial padrão (últimos 7 dias) se vazio
+        const hoje = new Date();
+        const seteDiasAtras = new Date();
+        seteDiasAtras.setDate(hoje.getDate() - 7);
+        
+        document.getElementById('dataFim').value = hoje.toISOString().split('T')[0];
+        document.getElementById('dataInicio').value = seteDiasAtras.toISOString().split('T')[0];
+
+        initCharts();
+        carregarDashboardAnalitico();
+    });
+</script>
+{% endblock %}

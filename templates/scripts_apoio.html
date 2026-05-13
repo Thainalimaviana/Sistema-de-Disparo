@@ -1,0 +1,612 @@
+{% extends "base.html" %}
+{% block title %}Scripts de Apoio - Consig Tech{% endblock %}
+{% block page_title %}Scripts de Apoio{% endblock %}
+
+{% block header_actions %}
+<!-- Barra de busca removida a pedido do usuário -->
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── Kanban Scripts (Ref: comunicados.html) ── */
+.scripts-wrapper {
+    padding: 20px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.kanban-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    min-height: 500px;
+}
+@media (max-width: 900px) {
+    .kanban-board { grid-template-columns: 1fr; }
+}
+
+.kanban-column {
+    background: rgba(248, 250, 252, 0.5);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+}
+.theme-dark .kanban-column {
+    background: rgba(30, 41, 59, 0.3);
+    border-color: #334155;
+}
+
+.column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px 10px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: 5px;
+}
+.column-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.column-count {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.theme-dark .column-count { background: #334155; color: #94a3b8; }
+
+.col-1-header .column-header { border-bottom-color: #10b981; }
+.col-1-header .column-title i { color: #10b981; }
+.col-2-header .column-header { border-bottom-color: #3b82f6; }
+.col-2-header .column-title i { color: #3b82f6; }
+
+.kanban-card.fixed-card {
+    border: 2px solid #fbbf24;
+    background: #fffdf5;
+}
+.theme-dark .kanban-card.fixed-card {
+    border-color: #d97706;
+    background: rgba(217, 119, 6, 0.05);
+}
+
+.column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.kanban-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    cursor: default;
+}
+.kanban-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.card-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+}
+.tag-negociacao { background: #dcfce7; color: #166534; }
+.tag-golpes { background: #fee2e2; color: #dc2626; }
+.tag-amortizacao { background: #dbeafe; color: #2563eb; }
+.tag-outros { background: #f1f5f9; color: #475569; }
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    line-height: 1.3;
+}
+
+.card-desc {
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: pre-wrap;
+}
+.theme-dark .card-desc { color: #94a3b8; }
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.author-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+.author-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+.btn-card-copy {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #dcfce7;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.1);
+}
+.theme-dark .btn-card-copy { background: rgba(22, 163, 74, 0.1); border-color: rgba(22, 163, 74, 0.2); }
+.btn-card-copy:hover { 
+    background: #16a34a; 
+    color: #fff; 
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+.btn-card-copy.success { 
+    background: #16a34a; 
+    color: #fff; 
+    border-color: #16a34a;
+}
+
+/* ── Paginação Premium ── */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 30px;
+    padding: 20px;
+}
+.btn-page {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #475569;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.theme-dark .btn-page { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+.btn-page:hover { 
+    border-color: #22c55e; 
+    color: #22c55e;
+    transform: translateY(-2px);
+}
+.btn-page.active {
+    background: #22c55e;
+    color: #fff;
+    border-color: #22c55e;
+    box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2);
+}
+.btn-page:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+.page-info {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin: 0 15px;
+    font-weight: 600;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal de Visualização Expandida Premium */
+.modal-view-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeOverlay 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-view-content {
+    background: var(--bg-panel);
+    width: 100%;
+    max-width: 850px;
+    max-height: 85vh;
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5), 
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    animation: slideUpModal 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-view-header {
+    padding: 32px 40px;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(to bottom, var(--bg-panel), rgba(248, 250, 252, 0.5));
+    position: relative;
+}
+.theme-dark .modal-view-header {
+    background: linear-gradient(to bottom, var(--bg-panel), rgba(30, 41, 59, 0.5));
+}
+.modal-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.modal-view-title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: var(--text-main);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+.modal-view-body {
+    padding: 40px;
+    overflow-y: auto;
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: var(--text-main);
+    white-space: pre-wrap;
+    font-family: 'Inter', sans-serif;
+}
+.modal-view-footer {
+    padding: 24px 40px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(248, 250, 252, 0.3);
+}
+.theme-dark .modal-view-footer { background: rgba(15, 23, 42, 0.3); }
+
+.btn-close-view {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(241, 245, 249, 0.5);
+    border: none;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.theme-dark .btn-close-view { background: rgba(30, 41, 59, 0.8); }
+.btn-close-view:hover { 
+    background: #fee2e2; 
+    color: #ef4444; 
+    transform: rotate(90deg); 
+}
+
+@keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUpModal { 
+    from { opacity: 0; transform: translateY(40px) scale(0.95); } 
+    to { opacity: 1; transform: translateY(0) scale(1); } 
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scripts-wrapper">
+    <div class="kanban-board">
+        <!-- Coluna 1: Negociação & Golpes -->
+        <div class="kanban-column col-1-header">
+            <div class="column-header">
+                <div class="column-title"><i class="fas fa-handshake"></i> Negociação & Golpes</div>
+                <div class="column-count" id="countCol1">0</div>
+            </div>
+            <div class="column-cards" id="cardsCol1"></div>
+        </div>
+
+        <!-- Coluna 2: Amortização & Outros -->
+        <div class="kanban-column col-2-header">
+            <div class="column-header">
+                <div class="column-title"><i class="fas fa-chart-line"></i> Amortização & Outros</div>
+                <div class="column-count" id="countCol2">0</div>
+            </div>
+            <div class="column-cards" id="cardsCol2"></div>
+        </div>
+    </div>
+
+    <!-- Paginação -->
+    <div id="pagination" class="pagination-container"></div>
+</div>
+
+<!-- Modal de Visualização -->
+<div class="modal-view-overlay" id="modalViewScript" onclick="fecharViewScript(event)">
+    <div class="modal-view-content" onclick="event.stopPropagation()">
+        <div class="modal-view-header">
+            <div class="modal-header-meta">
+                <span class="card-tag" id="viewScriptTag">CATEGORIA</span>
+                <span id="viewScriptMeta" style="color:#94a3b8; font-size:0.85rem;"><i class="far fa-calendar-alt"></i> Data</span>
+            </div>
+            <h2 id="viewScriptTitle" class="modal-view-title">Título do Script</h2>
+            <button class="btn-close-view" onclick="fecharViewScript()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-view-body" id="viewScriptBody">
+            Conteúdo aqui...
+        </div>
+        <div class="modal-view-footer">
+            <div style="display:flex; align-items:center; gap:10px; color:#94a3b8; font-size:0.85rem;">
+                <i class="fas fa-info-circle"></i> Use o botão ao lado para copiar rapidamente.
+            </div>
+            <div style="display:flex; gap:12px;">
+                <button class="btn-premium-outline" onclick="fecharViewScript()" style="border-color:#e2e8f0; color:#64748b;">Fechar Janela</button>
+                <button class="btn-card-copy" id="btnCopyView" onclick="copiarTextoView()" style="padding: 12px 24px; font-size: 0.9rem;">
+                    <i class="far fa-copy"></i> Copiar Conteúdo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let todosScripts = [];
+let paginaAtual = 1;
+const itensPorPagina = 6; // 3 por coluna
+
+document.addEventListener('DOMContentLoaded', () => {
+    carregarScripts();
+});
+
+function carregarScripts() {
+    fetch('/api/scripts?apenas_publicados=true')
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            todosScripts = data.scripts;
+            renderizarScripts();
+        }
+    });
+}
+
+function renderizarScripts() {
+    const col1 = document.getElementById('cardsCol1');
+    const col2 = document.getElementById('cardsCol2');
+    
+    col1.innerHTML = '';
+    col2.innerHTML = '';
+    
+    // Ordernar: fixados primeiro, depois por data
+    const filtrados = [...todosScripts].sort((a, b) => b.fixado - a.fixado);
+
+    // Lógica de Paginação
+    const totalPaginas = Math.ceil(filtrados.length / itensPorPagina);
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const fim = inicio + itensPorPagina;
+    const scriptsPagina = filtrados.slice(inicio, fim);
+
+    scriptsPagina.forEach(s => {
+        const cat = (s.categoria || '').toLowerCase();
+        const card = document.createElement('div');
+        card.className = `kanban-card ${s.fixado ? 'fixed-card' : ''}`;
+        card.style.animation = 'fadeIn 0.4s ease forwards';
+        card.style.cursor = 'pointer';
+        card.onclick = (e) => {
+            if (!e.target.closest('button')) abrirViewScript(s.id);
+        };
+        
+        // Salva conteúdo em um atributo data de forma segura
+        card.dataset.conteudo = s.conteudo;
+
+        let tagClass = 'tag-outros';
+        if(cat.includes('negocia')) tagClass = 'tag-negociacao';
+        else if(cat.includes('golpe')) tagClass = 'tag-golpes';
+        else if(cat.includes('amortiza')) tagClass = 'tag-amortizacao';
+
+        card.innerHTML = `
+            <div class="card-top">
+                <span class="card-tag ${tagClass}">${s.categoria}</span>
+                ${s.fixado ? '<i class="fas fa-thumbtack" style="color: #fbbf24; font-size: 0.8rem;" title="Fixado pelo Admin"></i>' : ''}
+            </div>
+            <h4 class="card-title">${s.titulo}</h4>
+            <div class="card-desc">${s.conteudo}</div>
+            <div class="card-footer">
+                <div class="author-info">
+                    <div class="author-dot"></div>
+                    Admin
+                </div>
+                <button class="btn-card-copy" onclick="prepararCopia(this)">
+                    <i class="far fa-copy"></i> Copiar Script
+                </button>
+            </div>
+        `;
+        
+        if (cat.includes('negocia') || cat.includes('golpe')) {
+            col1.appendChild(card);
+        } else {
+            col2.appendChild(card);
+        }
+    });
+    
+    // Atualiza contadores globais (do total filtrado, não da página)
+    const totalC1 = filtrados.filter(s => (s.categoria||'').toLowerCase().includes('negocia') || (s.categoria||'').toLowerCase().includes('golpe')).length;
+    const totalC2 = filtrados.length - totalC1;
+    
+    document.getElementById('countCol1').textContent = totalC1;
+    document.getElementById('countCol2').textContent = totalC2;
+
+    renderizarPaginacao(totalPaginas);
+}
+
+function renderizarPaginacao(totalPaginas) {
+    const container = document.getElementById('pagination');
+    container.innerHTML = '';
+    if (totalPaginas <= 1) return;
+
+    // Anterior
+    const btnPrev = document.createElement('button');
+    btnPrev.className = 'btn-page';
+    btnPrev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    btnPrev.disabled = paginaAtual === 1;
+    btnPrev.onclick = () => { paginaAtual--; renderizarScripts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+    container.appendChild(btnPrev);
+
+    // Páginas
+    for (let i = 1; i <= totalPaginas; i++) {
+        if (totalPaginas > 5) {
+            if (i !== 1 && i !== totalPaginas && (i < paginaAtual - 1 || i > paginaAtual + 1)) {
+                if (i === paginaAtual - 2 || i === paginaAtual + 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'page-info';
+                    dots.textContent = '...';
+                    container.appendChild(dots);
+                }
+                continue;
+            }
+        }
+        const btn = document.createElement('button');
+        btn.className = `btn-page ${i === paginaAtual ? 'active' : ''}`;
+        btn.textContent = i;
+        btn.onclick = () => { paginaAtual = i; renderizarScripts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+        container.appendChild(btn);
+    }
+
+    // Próximo
+    const btnNext = document.createElement('button');
+    btnNext.className = 'btn-page';
+    btnNext.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    btnNext.disabled = paginaAtual === totalPaginas;
+    btnNext.onclick = () => { paginaAtual++; renderizarScripts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+    container.appendChild(btnNext);
+}
+
+function prepararCopia(btn) {
+    const card = btn.closest('.kanban-card');
+    const texto = card.dataset.conteudo;
+    copiarTexto(btn, texto);
+}
+
+function copiarTexto(btn, texto) {
+    navigator.clipboard.writeText(texto).then(() => {
+        const originalHTML = btn.innerHTML;
+        btn.classList.add('success');
+        btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+        
+        // Feedback visual no card
+        const card = btn.closest('.kanban-card');
+        card.style.borderColor = '#16a34a';
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('success');
+            card.style.borderColor = '';
+        }, 2000);
+    }).catch(err => {
+        console.error('Erro ao copiar:', err);
+        alert('Erro ao copiar texto. Tente selecionar e copiar manualmente.');
+    });
+}
+
+let scriptAtualParaCopia = '';
+
+function formatarDataBR(dataStr) {
+    if(!dataStr) return '';
+    try {
+        // Adiciona Z para indicar que é UTC e permitir conversão automática para local
+        const d = new Date(dataStr.replace(' ', 'T') + 'Z');
+        if(isNaN(d)) return dataStr;
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const ano = d.getFullYear();
+        return `${dia}/${mes}/${ano}`;
+    } catch(e) { return dataStr; }
+}
+
+function abrirViewScript(id) {
+    const script = todosScripts.find(s => s.id === id);
+    if (!script) return;
+
+    const tagEl = document.getElementById('viewScriptTag');
+    tagEl.textContent = script.categoria;
+    
+    // Ajusta cor da tag no modal
+    const cat = (script.categoria || '').toLowerCase();
+    let tagClass = 'tag-outros';
+    if(cat.includes('negocia')) tagClass = 'tag-negociacao';
+    else if(cat.includes('golpe')) tagClass = 'tag-golpes';
+    else if(cat.includes('amortiza')) tagClass = 'tag-amortizacao';
+    tagEl.className = `card-tag ${tagClass}`;
+
+    const dataFormatada = formatarDataBR(script.criado_em);
+    document.getElementById('viewScriptMeta').innerHTML = `<i class="far fa-calendar-alt"></i> Criado em: ${dataFormatada}`;
+    document.getElementById('viewScriptTitle').textContent = script.titulo;
+    document.getElementById('viewScriptBody').textContent = script.conteudo;
+    scriptAtualParaCopia = script.conteudo;
+    
+    document.getElementById('modalViewScript').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function fecharViewScript(e) {
+    document.getElementById('modalViewScript').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function copiarTextoView() {
+    const btn = document.getElementById('btnCopyView');
+    copiarTexto(btn, scriptAtualParaCopia);
+}
+</script>
+{% endblock %}

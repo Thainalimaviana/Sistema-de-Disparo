@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Bancos - Consig Tech{% endblock %}
+{% block page_title %}Gerenciar Bancos{% endblock %}
+
+{% block head %}
+<style>
+/* Estilos Gerais e Tipografia */
+.dashboard-content-inner {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Cabeçalho */
+.gb-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.gb-header-texts h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px 0;
+}
+.gb-header-texts p {
+    color: #28a745; /* Verde texto */
+    font-size: 0.95rem;
+    margin: 0;
+}
+.btn-novo-banco {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-novo-banco:hover { background: #1c7c34; }
+
+/* Cards de Estatísticas */
+.gb-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+.gb-stat-card {
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid transparent;
+}
+.gb-stat-info { display: flex; flex-direction: column; gap: 8px; }
+.gb-stat-title { font-size: 0.85rem; font-weight: 600; }
+.gb-stat-value { font-size: 1.8rem; font-weight: 700; }
+.gb-stat-icon {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+}
+
+/* Variações de Cores dos Cards */
+.stat-blue { background: #eaf7ed; border-color: #d1e7d6; }
+.stat-blue .gb-stat-title, .stat-blue .gb-stat-value { color: #28a745; }
+.stat-blue .gb-stat-icon { background: #fff; color: #28a745; }
+
+.stat-green { background: #eaf7ed; border-color: #d1e7d6; }
+.stat-green .gb-stat-title, .stat-green .gb-stat-value { color: #28a745; }
+.stat-green .gb-stat-icon { background: #fff; color: #28a745; }
+
+.stat-red { background: #fef2f2; border-color: #fee2e2; }
+.stat-red .gb-stat-title, .stat-red .gb-stat-value { color: #991b1b; }
+.stat-red .gb-stat-icon { background: #fee2e2; color: #ef4444; }
+
+/* Seção de Filtros */
+.gb-section-box {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+}
+.gb-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 16px 0;
+}
+.gb-filters { display: flex; gap: 12px; flex-wrap: wrap; }
+.gb-filter-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #4b5563;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.2s;
+}
+.gb-filter-btn:hover { background: #f3f4f6; }
+.gb-filter-btn.active { background: #28a745; color: #fff; border-color: #28a745; }
+
+/* Tabela */
+.gb-table-wrapper { overflow-x: auto; }
+.gb-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+.gb-table th, .gb-table td { padding: 16px; text-align: left; }
+.gb-table th {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #28a745; /* Verde dos títulos da tabela */
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+}
+.gb-table td {
+    font-size: 0.95rem;
+    color: #111827;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+.gb-table tbody tr:hover { background: #f9fafb; }
+
+.td-banco-nome { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.td-banco-nome i { color: #28a745; font-size: 1.1rem; }
+.td-id { color: #28a745; font-weight: 600; }
+
+.status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 600;
+}
+.status-ativo { background: #eaf7ed; color: #28a745; }
+.status-inativo { background: #fee2e2; color: #991b1b; }
+
+.gb-actions { display: flex; gap: 12px; }
+.btn-icon { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 4px; transition: color 0.2s; }
+.btn-edit { color: #28a745; } .btn-edit:hover { color: #1c7c34; }
+.btn-disable { color: #f97316; } .btn-disable:hover { color: #c2410c; }
+.btn-delete { color: #ef4444; } .btn-delete:hover { color: #b91c1c; }
+.btn-history { color: #8b5cf6; } .btn-history:hover { color: #6d28d9; }
+
+.gb-empty { text-align: center; padding: 40px; color: #6b7280; }
+.gb-empty i { font-size: 2.5rem; margin-bottom: 12px; color: #d1d5db; }
+
+/* Modal (Mantido com pequenos ajustes de cores) */
+.gb-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;}
+.gb-modal-overlay.open{display:flex;}
+.gb-modal{background:#fff;border-radius:14px;padding:28px 30px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);position:relative;animation:gbIn 0.2s ease;}
+@keyframes gbIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.gb-modal-title{font-size:1.1rem;font-weight:700;color:#1e293b;margin:0 0 4px;}
+.gb-modal-sub{font-size:0.82rem;color:#64748b;margin:0 0 22px;}
+.gb-modal-label{font-size:0.83rem;font-weight:700;color:#374151;margin-bottom:6px;display:block;}
+.gb-modal-input{width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#1e293b;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:14px;transition:border-color 0.2s;}
+.gb-modal-input:focus{border-color:#28a745;box-shadow:0 0 0 3px rgba(40, 167, 69, 0.1);}
+.gb-modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:6px;}
+.btn-gm-cancel{padding:9px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:8px;font-size:0.9rem;color:#475569;cursor:pointer;font-weight:600;}
+.btn-gm-cancel:hover{background:#f1f5f9;}
+.btn-gm-save{padding:9px 20px;background:#28a745;color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:background 0.2s;}
+.btn-gm-save:hover{background:#1c7c34;}
+
+/* Mensagens de Retorno */
+.gb-msg{padding:12px 16px;border-radius:8px;font-size:0.9rem;margin-bottom:14px;display:none; font-weight: 500;}
+.gb-msg.success{background:#eaf7ed;color:#28a745;border:1px solid #c3e6cb;}
+.gb-msg.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
+
+/* Dark mode (Adaptado) */
+.theme-dark .gb-section-box, .theme-dark .gb-modal { background:#1e293b; border-color:#334155; }
+.theme-dark .gb-header-texts h2, .theme-dark .gb-section-title, .theme-dark .gb-table td { color: #f1f5f9; }
+.theme-dark .gb-table th { border-bottom-color: #334155; }
+.theme-dark .gb-table td { border-bottom-color: #334155; }
+.theme-dark .gb-table tbody tr:hover { background: #0f172a; }
+.theme-dark .stat-blue { background: #064e3b; border-color: #065f46; }
+.theme-dark .stat-blue .gb-stat-title, .theme-dark .stat-blue .gb-stat-value { color: #a7f3d0; }
+.theme-dark .stat-blue .gb-stat-icon { background: #065f46; color: #34d399; }
+.theme-dark .stat-green { background: #064e3b; border-color: #065f46; }
+.theme-dark .stat-green .gb-stat-title, .theme-dark .stat-green .gb-stat-value { color: #a7f3d0; }
+.theme-dark .stat-green .gb-stat-icon { background: #065f46; color: #34d399; }
+.theme-dark .stat-red { background: #7f1d1d; border-color: #991b1b; }
+.theme-dark .stat-red .gb-stat-title, .theme-dark .stat-red .gb-stat-value { color: #fecaca; }
+.theme-dark .stat-red .gb-stat-icon { background: #991b1b; color: #f87171; }
+.theme-dark .gb-filter-btn { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+.theme-dark .gb-filter-btn.active { background: #28a745; color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-content-inner">
+  <div class="gb-header-row">
+    <div class="gb-header-texts">
+      <h2>Gerenciar Bancos</h2>
+      <p>Adicione, edite ou inative bancos parceiros do sistema</p>
+    </div>
+    <button class="btn-novo-banco" id="btnNovoBanco"><i class="fas fa-plus"></i> Adicionar Banco</button>
+  </div>
+
+  <div class="gb-msg" id="gbMsg"></div>
+
+  <!-- Cards de Estatísticas -->
+  <div class="gb-stats-row">
+    <div class="gb-stat-card stat-blue">
+      <div class="gb-stat-info">
+        <span class="gb-stat-title">Total de Bancos</span>
+        <span class="gb-stat-value" id="countTotal">0</span>
+      </div>
+      <div class="gb-stat-icon"><i class="fas fa-building"></i></div>
+    </div>
+    <div class="gb-stat-card stat-green">
+      <div class="gb-stat-info">
+        <span class="gb-stat-title">Bancos Ativos</span>
+        <span class="gb-stat-value" id="countAtivos">0</span>
+      </div>
+      <div class="gb-stat-icon"><i class="fas fa-check-circle"></i></div>
+    </div>
+    <div class="gb-stat-card stat-red">
+      <div class="gb-stat-info">
+        <span class="gb-stat-title">Bancos Inativos</span>
+        <span class="gb-stat-value" id="countInativos">0</span>
+      </div>
+      <div class="gb-stat-icon"><i class="fas fa-times-circle"></i></div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="gb-section-box">
+    <h3 class="gb-section-title">Filtros</h3>
+    <div class="gb-filters">
+      <button class="gb-filter-btn active" id="filterTodos">Todos (<span id="btnCountTotal">0</span>)</button>
+      <button class="gb-filter-btn" id="filterAtivos"><i class="fas fa-eye"></i> Ativos (<span id="btnCountAtivos">0</span>)</button>
+      <button class="gb-filter-btn" id="filterInativos"><i class="fas fa-eye-slash"></i> Inativos (<span id="btnCountInativos">0</span>)</button>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="gb-section-box">
+    <h3 class="gb-section-title">Lista de Bancos</h3>
+    <div class="gb-table-wrapper">
+      <table class="gb-table">
+        <thead>
+          <tr>
+            <th>Nome do Banco</th>
+            <th>Status</th>
+            <th>Data de Criação</th>
+            <th>Data de Inativação</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="gbTbody">
+          <tr>
+            <td colspan="5">
+              <div class="gb-empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando bancos...</p></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Banco -->
+<div class="gb-modal-overlay" id="gbModal">
+  <div class="gb-modal">
+    <p class="gb-modal-title">Adicionar Novo Banco</p>
+    <p class="gb-modal-sub">Preencha os dados do banco financeiro a ser cadastrado.</p>
+    <label class="gb-modal-label">Nome do Banco <span style="color:#ef4444">*</span></label>
+    <input type="text" class="gb-modal-input" id="inputNomeBanco" placeholder="Ex: Banco BMG">
+    <div class="gb-modal-footer">
+      <button class="btn-gm-cancel" id="btnCancelarBanco">Cancelar</button>
+      <button class="btn-gm-save" id="btnSalvarBanco"><i class="fas fa-save"></i> Salvar Banco</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Histórico -->
+<div class="gb-modal-overlay" id="gbModalHistorico">
+  <div class="gb-modal" style="max-width: 500px;">
+    <p class="gb-modal-title">Histórico: <span id="histNomeBanco"></span></p>
+    <p class="gb-modal-sub">Registros de ativação e inativação deste banco.</p>
+    <div id="histContent" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+      <!-- Conteúdo do histórico aqui -->
+    </div>
+    <div class="gb-modal-footer">
+      <button class="btn-gm-cancel" onclick="document.getElementById('gbModalHistorico').classList.remove('open')">Fechar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let bancosData = [];
+let filtroAtual = 'todos';
+
+document.addEventListener('DOMContentLoaded', () => {
+  carregarBancos();
+  
+  // Modal Events
+  document.getElementById('btnNovoBanco').addEventListener('click', () => {
+    document.getElementById('inputNomeBanco').value = '';
+    document.getElementById('gbModal').classList.add('open');
+  });
+  document.getElementById('btnCancelarBanco').addEventListener('click', () => {
+    document.getElementById('gbModal').classList.remove('open');
+  });
+  document.getElementById('gbModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('gbModal'))
+      document.getElementById('gbModal').classList.remove('open');
+  });
+  document.getElementById('btnSalvarBanco').addEventListener('click', salvarBanco);
+
+  // Filter Events
+  document.getElementById('filterTodos').addEventListener('click', (e) => setFiltro('todos', e.currentTarget));
+  document.getElementById('filterAtivos').addEventListener('click', (e) => setFiltro('ativos', e.currentTarget));
+  document.getElementById('filterInativos').addEventListener('click', (e) => setFiltro('inativos', e.currentTarget));
+});
+
+function carregarBancos() {
+  fetch('/api/bancos?todos=1')
+    .then(r => r.json())
+    .then(data => {
+      // Mock de propriedades para manter a fidelidade visual caso a API não traga tudo
+      bancosData = (data.bancos || []).map((b, index) => ({
+        ...b,
+        status: b.status !== undefined ? b.status : true, // Assumindo 'true' como ativo se não existir
+        data_criacao: b.data_criacao || new Date().toLocaleDateString('pt-BR'),
+        data_inativacao: b.data_inativacao || '-'
+      }));
+      atualizarContadores();
+      renderBancos();
+    })
+    .catch(() => {
+      document.getElementById('gbTbody').innerHTML = `<tr><td colspan="5"><div class="gb-empty">Erro ao carregar os bancos.</div></td></tr>`;
+    });
+}
+
+function atualizarContadores() {
+  const total = bancosData.length;
+  const ativos = bancosData.filter(b => b.status).length;
+  const inativos = total - ativos;
+
+  document.getElementById('countTotal').innerText = total;
+  document.getElementById('countAtivos').innerText = ativos;
+  document.getElementById('countInativos').innerText = inativos;
+
+  document.getElementById('btnCountTotal').innerText = total;
+  document.getElementById('btnCountAtivos').innerText = ativos;
+  document.getElementById('btnCountInativos').innerText = inativos;
+}
+
+function setFiltro(tipo, elemento) {
+  filtroAtual = tipo;
+  document.querySelectorAll('.gb-filter-btn').forEach(btn => btn.classList.remove('active'));
+  elemento.classList.add('active');
+  renderBancos();
+}
+
+function renderBancos() {
+  const tbody = document.getElementById('gbTbody');
+  
+  let bancosFiltrados = bancosData;
+  if (filtroAtual === 'ativos') bancosFiltrados = bancosData.filter(b => b.status);
+  if (filtroAtual === 'inativos') bancosFiltrados = bancosData.filter(b => !b.status);
+
+  if (!bancosFiltrados.length) {
+    tbody.innerHTML = `<tr><td colspan="5">
+      <div class="gb-empty">
+        <i class="fas fa-university"></i><p>Nenhum banco encontrado nesta categoria.</p>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = bancosFiltrados.map((b, index) => `
+    <tr>
+      <td>
+        <div class="td-banco-nome">
+          <i class="fas fa-building"></i> ${b.nome}
+        </div>
+      </td>
+      <td>
+        ${b.status 
+          ? `<span class="status-badge status-ativo"><i class="fas fa-check-circle"></i> Ativo</span>` 
+          : `<span class="status-badge status-inativo"><i class="fas fa-times-circle"></i> Inativo</span>`
+        }
+      </td>
+      <td>${b.data_criacao}</td>
+      <td>${b.status ? '-' : b.data_inativacao}</td>
+      <td>
+        <div class="gb-actions">
+          <button class="btn-icon btn-history" title="Ver Histórico" onclick="verHistoricoBanco(${b.id})"><i class="fas fa-history"></i></button>
+          <button class="btn-icon btn-disable" title="${b.status ? 'Inativar' : 'Ativar'}" onclick="toggleStatus(${b.id})">
+            <i class="fas ${b.status ? 'fa-eye-slash' : 'fa-eye'}"></i>
+          </button>
+          <button class="btn-icon btn-delete" title="Excluir Permanentemente" onclick="excluirBanco(${b.id}, '${b.nome}')">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function salvarBanco() {
+  const nome = document.getElementById('inputNomeBanco').value.trim();
+  if (!nome) { mostrarMsg('Informe o nome do banco.', 'error'); return; }
+  
+  const btn = document.getElementById('btnSalvarBanco');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  
+  fetch('/api/bancos', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ nome })
+  }).then(r => r.json()).then(d => {
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Salvar Banco';
+    if (d.success) {
+      document.getElementById('gbModal').classList.remove('open');
+      mostrarMsg(d.message, 'success');
+      carregarBancos();
+    } else { mostrarMsg(d.message || 'Erro ao salvar.', 'error'); }
+  });
+}
+
+function toggleStatus(id) {
+  fetch(`/api/bancos/${id}/toggle`, { method: 'POST' })
+    .then(r => r.json()).then(d => {
+      if (d.success) { carregarBancos(); }
+      else { mostrarMsg(d.message || 'Erro ao alterar status.', 'error'); }
+    });
+}
+
+function excluirBanco(id, nome) {
+  if (!confirm(`EXCLUIR PERMANENTEMENTE o banco "${nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  fetch(`/api/bancos/${id}`, { method: 'DELETE' })
+    .then(r => r.json()).then(d => {
+      if (d.success) { mostrarMsg(d.message, 'success'); carregarBancos(); }
+      else { mostrarMsg(d.message || 'Erro ao excluir.', 'error'); }
+    });
+}
+
+function mostrarMsg(msg, tipo) {
+  const el = document.getElementById('gbMsg');
+  el.textContent = msg; el.className = `gb-msg ${tipo}`;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+function verHistoricoBanco(id) {
+  const modal = document.getElementById('gbModalHistorico');
+  const content = document.getElementById('histContent');
+  const nameSpan = document.getElementById('histNomeBanco');
+  
+  content.innerHTML = '<div class="gb-empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando histórico...</p></div>';
+  modal.classList.add('open');
+  
+  fetch(`/api/bancos/${id}/historico`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        nameSpan.innerText = d.nome;
+        if (d.historico.length === 0) {
+          content.innerHTML = '<div class="gb-empty"><p>Nenhum registro de alteração encontrado.</p></div>';
+        } else {
+          content.innerHTML = d.historico.map(l => `
+            <div style="padding: 10px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <p style="margin:0; font-weight:600; font-size:0.9rem; color:${l.acao.includes('Inativou') ? '#ef4444' : '#10b981'};">${l.acao}</p>
+                <p style="margin:0; font-size:0.8rem; color:#64748b;">Por: ${l.usuario}</p>
+              </div>
+              <span style="font-size:0.8rem; color:#94a3b8;">${l.data}</span>
+            </div>
+          `).join('');
+        }
+      } else {
+        content.innerHTML = '<div class="gb-empty"><p>Erro ao carregar histórico.</p></div>';
+      }
+    });
+}
+
+</script>
+{% endblock %}

@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard - Consig Tech{% endblock %}</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='foguete.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-panel: #ffffff;
+            --text-main: #1e293b;
+            --sidebar-width: 280px;
+            --primary: #10b981;
+            --primary-light: rgba(16, 185, 129, 0.1);
+            --border-color: #e2e8f0;
+            --sidebar-hover: #f1f5f9;
+        }
+
+        body.theme-dark {
+            --bg-main: #0f172a;
+            --bg-panel: #1e293b;
+            --text-main: #f8fafc;
+            --border-color: #334155;
+            --sidebar-hover: #334155;
+            --primary-light: rgba(16, 185, 129, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text-main);
+            background-color: var(--bg-main);
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ----------------------------------
+           Professional Sidebar Styles
+        ----------------------------------- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 50;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            height: 80px; /* Fixed header height */
+            box-sizing: border-box;
+        }
+
+        .sidebar-logo {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .sidebar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+        }
+
+        .brand-highlight {
+            color: var(--primary);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1.5rem 1rem;
+            overflow-y: auto;
+        }
+        
+        /* Nav Scrollbar Styling */
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 4px; }
+
+        .nav-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            padding: 0.875rem 1rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item i {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            color: #64748b;
+            transition: color 0.2s ease;
+        }
+
+        body.theme-dark .nav-item i {
+            color: #94a3b8;
+        }
+
+        .nav-item:hover {
+            background-color: var(--sidebar-hover);
+            transform: translateX(4px);
+        }
+
+        .nav-item:hover i {
+            color: var(--primary);
+        }
+
+        /* Active State Profile */
+        .nav-item.active {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-item.active i {
+            color: var(--primary);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 60%;
+            width: 4px;
+            background-color: var(--primary);
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Badge de Notificação Sidebar */
+        .nav-badge {
+            background-color: #ef4444;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 20px;
+            margin-left: auto;
+            min-width: 18px;
+            text-align: center;
+            display: none; /* Escondido se for 0 */
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+        }
+        .nav-item:hover .nav-badge { transform: scale(1.1); }
+
+        /* ----------------------------------
+           Main Wrapper Elements
+        ----------------------------------- */
+        .main-wrapper {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: var(--bg-main);
+            transition: background-color 0.3s ease;
+        }
+
+        .top-header {
+            height: 80px;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 40;
+            position: relative;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* very light shadow */
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+
+        /* Profile Dropdown Minimalist Override */
+        .header-right { display: flex; align-items: center; gap: 1.5rem; }
+        
+        .profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem 0.5rem 0.5rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+        }
+        .profile-btn:hover { background-color: var(--sidebar-hover); }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background-color: var(--primary-light);
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        
+        .user-info-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+        }
+        .user-name { font-weight: 600; font-size: 0.9rem; }
+        .user-role { font-size: 0.75rem; color: #64748b; font-weight: 500; letter-spacing: 0.5px; }
+
+        .profile-menu {
+            position: absolute;
+            top: 100%;
+            right: 2rem;
+            margin-top: 0.5rem;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 0.5rem 0;
+            width: 200px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .profile-menu.active {
+            opacity: 1; visibility: visible; transform: translateY(0);
+        }
+
+        .menu-section { padding: 0.5rem 0.75rem; }
+        .menu-title { font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem; }
+        .menu-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; color: var(--text-main); text-decoration: none; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
+        .menu-item:hover { background-color: var(--sidebar-hover); }
+        .menu-item i { color: #64748b; width: 16px; font-size: 0.9rem; text-align: center; }
+        .menu-divider { height: 1px; background-color: var(--border-color); margin: 0.25rem 0; }
+        
+        /* Themes segment styling */
+        .theme-segmented {
+            display: flex; background: var(--sidebar-hover); padding: 3px; border-radius: 0.5rem; gap: 3px;
+        }
+        .theme-segmented button {
+            flex: 1; padding: 4px; border: none; background: transparent; border-radius: 0.35rem; cursor: pointer;
+            font-size: 0.75rem; font-weight: 500; color: var(--text-main); transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .theme-segmented button.active { background: var(--bg-panel); box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: 600; }
+        
+        .theme-colors { display: flex; gap: 6px; margin-top: 5px; }
+        .theme-dot-btn {
+            width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; background: transparent; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; padding: 0; transition: border-color 0.2s;
+        }
+        .theme-dot-btn.active { border-color: var(--primary); }
+        .theme-dot { width: 16px; height: 16px; border-radius: 50%; display: block; }
+        .theme-dot.green { background-color: #10b981; }
+        .theme-dot.pink { background-color: #ec4899; }
+        .theme-dot.blue { background-color: #3b82f6; }
+
+        .content-area {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        /* ----------------------------------
+           Responsive
+        ----------------------------------- */
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-wrapper { margin-left: 0; }
+            /* Aqui precisaria de um hamburguer menu para mobile, estou focando no layout desktop primeiramente conforme pedido */
+        }
+    </style>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="app-body">
+    <div class="app-container">
+        
+        <!-- Menu Lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='foguete.png') }}" onerror="this.style.display='none'" alt="Consig Tech Logo" class="sidebar-logo">
+                <span class="sidebar-brand">Consig<span class="brand-highlight">Tech</span></span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="{{ url_for('dashboard_page') }}" class="nav-item {% if request.endpoint == 'dashboard_page' %}active{% endif %}">
+                        <i class="fas fa-border-all"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    {% if session.get('role') == 'vendedor' %}
+                    <a href="{{ url_for('vendedor_page') }}" class="nav-item {% if request.endpoint == 'vendedor_page' %}active{% endif %}">
+                        <i class="fas fa-headset"></i>
+                        <span>Tela do Vendedor</span>
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('chat_page') }}" class="nav-item {% if request.endpoint == 'chat_page' %}active{% endif %}">
+                        <i class="far fa-comment-dots"></i>
+                        <span>Chat da Equipe</span>
+                        <span class="nav-badge" id="sidebarChatBadge">0</span>
+                    </a>
+                    <a href="{{ url_for('comunicados_page') }}" class="nav-item {% if request.endpoint == 'comunicados_page' %}active{% endif %}">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>Comunicados</span>
+                        <span class="nav-badge" id="sidebarComunicadosBadge">0</span>
+                    </a>
+                    {% if is_admin %}
+                    <a href="{{ url_for('administracao_page') }}" class="nav-item {% if request.endpoint == 'administracao_page' %}active{% endif %}">
+                        <i class="fas fa-user-shield"></i>
+                        <span>Administração</span>
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('analise_page') }}" class="nav-item {% if request.endpoint == 'analise_page' %}active{% endif %}">
+                        <i class="fas fa-chart-column"></i>
+                        <span>Análises</span>
+                    </a>
+                    {% if not is_admin %}
+                    <a href="{{ url_for('scripts_apoio_page') }}" class="nav-item {% if request.endpoint == 'scripts_apoio_page' %}active{% endif %}">
+                        <i class="fas fa-book-open"></i>
+                        <span>Scripts de Apoio</span>
+                    </a>
+                    {% endif %}
+                    {% if is_admin %}
+                    <a href="{{ url_for('banco_de_dados_page') }}" class="nav-item {% if request.endpoint == 'banco_de_dados_page' %}active{% endif %}">
+                        <i class="fas fa-database"></i>
+                        <span>Banco de Dados</span>
+                    </a>
+                    <a href="{{ url_for('gerenciar_bancos_page') }}" class="nav-item {% if request.endpoint == 'gerenciar_bancos_page' %}active{% endif %}">
+                        <i class="fas fa-building-columns"></i>
+                        <span>Gerenciar Bancos</span>
+                    </a>
+                    <a href="{{ url_for('gerenciar_scripts_page') }}" class="nav-item {% if request.endpoint == 'gerenciar_scripts_page' %}active{% endif %}">
+                        <i class="fas fa-file-code"></i>
+                        <span>Gerenciar Scripts</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </nav>
+        </aside>
+
+
+        <!-- Área Principal -->
+        <main class="main-wrapper">
+            <!-- Cabeçalho Superior -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h2 class="page-title">{% block page_title %}Visão Geral{% endblock %}</h2>
+                </div>
+                <div class="header-right">
+                    <div class="header-actions-slot">
+                        {% block header_actions %}{% endblock %}
+                    </div>
+                    <div class="user-profile-dropdown">
+                        <button class="profile-btn" id="profileBtn">
+                            <div class="user-avatar" id="userAvatar">
+                                {% if False %}
+                                    <!-- Removido da sessão por ser muito pesado -->
+                                {% endif %}
+                                <i class="fas fa-user" id="avatarPlaceholder"></i>
+                            </div>
+                            <div class="user-info-text">
+                                <span class="user-name">{{ user.split('@')[0].split('.')[0].split(' ')[0]|capitalize if user else 'Usuário' }}</span>
+                                {% if is_admin %}
+                                    <span class="user-role">Administrador</span>
+                                {% else %}
+                                    <span class="user-role">Vendedor</span>
+                                {% endif %}
+                            </div>
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </button>
+                        
+                        <div class="profile-menu" id="profileMenu">
+                            <div class="menu-section">
+                            <!-- Opção de foto removida para manter o sistema leve -->
+                            </div>
+                            
+                            <div class="menu-section">
+                                <p class="menu-title">APARÊNCIA</p>
+                                <div class="theme-switcher">
+                                    <!-- Segmented Control para Claro/Escuro -->
+                                    <div class="theme-segmented">
+                                        <button class="theme-btn theme-opt" data-theme="light">
+                                            <i class="fas fa-sun"></i> Claro
+                                        </button>
+                                        <button class="theme-btn theme-opt" data-theme="dark">
+                                            <i class="fas fa-moon"></i> Escuro
+                                        </button>
+                                    </div>
+                                    
+                                    <p class="menu-title" style="margin-top: 15px;">COR DO TEMA</p>
+                                    <!-- Cores de Acento -->
+                                    <div class="theme-colors">
+                                        <button class="theme-dot-btn theme-opt" data-theme="green" title="Green Mode">
+                                            <span class="theme-dot green"></span>
+                                        </button>
+                                        <button class="theme-dot-btn theme-opt" data-theme="pink" title="Pink Mode">
+                                            <span class="theme-dot pink"></span>
+                                        </button>
+                                        <button class="theme-dot-btn theme-opt" data-theme="blue" title="Blue Mode">
+                                            <span class="theme-dot blue"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="menu-divider"></div>
+                            <a href="{{ url_for('logout') }}" class="menu-item text-danger" style="color: #ef4444;">
+                                <i class="fas fa-sign-out-alt" style="color: #ef4444;"></i>
+                                <span>Sair</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Conteúdo Dinâmico -->
+            <div class="content-area">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const profileBtn = document.getElementById('profileBtn');
+            const profileMenu = document.getElementById('profileMenu');
+            const userAvatar = document.getElementById('userAvatar');
+            const themeOpts = document.querySelectorAll('.theme-opt');
+
+            // Toggle Dropdown
+            profileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                profileMenu.classList.toggle('active');
+            });
+
+            document.addEventListener('click', () => {
+                profileMenu.classList.remove('active');
+            });
+
+            profileMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            // Chaves de temas
+            const CURRENT_USER = "{{ session.get('user', 'default') }}";
+            const THEME_KEY = 'userTheme_' + CURRENT_USER;
+            const ACCENT_KEY = 'userAccent_' + CURRENT_USER;
+
+            // Troca de Temas
+            themeOpts.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    const theme = opt.getAttribute('data-theme');
+                    
+                    // Se for claro/escuro, mantemos a lógica de prefixo theme-
+                    // Se for cor, também aplicamos como classe no body
+                    if(theme === 'light' || theme === 'dark') {
+                        // Ao trocar o modo base, removemos apenas as classes de modo
+                        document.body.classList.remove('theme-light', 'theme-dark');
+                        document.body.classList.add('theme-' + theme);
+                    } else {
+                        // Ao trocar a cor, removemos as classes de cor
+                        document.body.classList.remove('theme-green', 'theme-pink', 'theme-blue');
+                        document.body.classList.add('theme-' + theme);
+                    }
+                    
+                    // Atualizar visual dos botões
+                    if(theme === 'light' || theme === 'dark') {
+                        document.querySelectorAll('.theme-segmented .theme-opt').forEach(b => b.classList.remove('active'));
+                        opt.classList.add('active');
+                    } else {
+                        document.querySelectorAll('.theme-colors .theme-opt').forEach(b => b.classList.remove('active'));
+                        opt.classList.add('active');
+                    }
+
+                    localStorage.setItem('appThemeMode', document.body.classList.contains('theme-dark') ? 'dark' : 'light');
+                    if(theme !== 'light' && theme !== 'dark') {
+                        localStorage.setItem('appThemeColor', theme);
+                    }
+                    
+                    profileMenu.classList.remove('active');
+                });
+            });
+
+            // Carregar Tema Salvo
+            const savedMode = localStorage.getItem('appThemeMode') || 'light';
+            const savedColor = localStorage.getItem('appThemeColor') || 'green';
+            
+            document.body.classList.add('theme-' + savedMode);
+            document.body.classList.add('theme-' + savedColor);
+            
+            // Marcar botões ativos iniciais
+            document.querySelector(`.theme-opt[data-theme="${savedMode}"]`)?.classList.add('active');
+            document.querySelector(`.theme-opt[data-theme="${savedColor}"]`)?.classList.add('active');
+        });
+    </script>
+    <!-- Script de Notificações Globais via Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        window.appSocket = window.appSocket || io({ transports: ['websocket', 'polling'] });
+    </script>
+
+    {% block scripts %}{% endblock %}
+    <div id="globalToastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px;"></div>
+
+    <script>
+        
+        window.playNotificationSound = function() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime); // Pitch inicial
+                osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1); // Pitch final
+                
+                gainNode.gain.setValueAtTime(0.15, ctx.currentTime); // Volume
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            } catch (e) {
+                console.log("Áudio bloqueado pelo navegador até haver interação do usuário.");
+            }
+        };
+        
+        window.appSocket.on('novo_comunicado', function(data) {
+            window.playNotificationSound();
+            mostrarNotificacaoComunicado(data);
+            updateUnreadCount();
+        });
+        
+        // Listener global para som de mensagem (quando não está na tela de chat)
+        window.appSocket.on('nova_mensagem', function(msg) {
+            // Se não estiver na página de chat, toca o som e mostra um alerta no badge
+            if (!window.location.pathname.includes('/chat')) {
+                // Tocar som se a mensagem for de outra pessoa
+                window.playNotificationSound();
+                
+                // Atualiza a contagem real de não lidas do chat
+                updateChatUnreadCount();
+            }
+        });
+
+        function updateUnreadCount() {
+            fetch('/api/comunicados/unread_count')
+            .then(res => res.json())
+            .then(data => {
+                const badge = document.getElementById('sidebarComunicadosBadge');
+                if (badge && data.success) {
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 99 ? '99+' : data.count;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(() => {});
+        }
+
+        // Atualizar ao carregar e periodicamente
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUnreadCount();
+            updateChatUnreadCount();
+            setInterval(updateUnreadCount, 60000); // 1 minuto
+            setInterval(updateChatUnreadCount, 30000); // 30 segundos
+            
+            // Se estiver na página de chat, marcar como lido imediatamente
+            if (window.location.pathname.includes('/chat')) {
+                fetch('/api/chat/marcar_lido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ canal: 'geral' })
+                }).then(() => {
+                    updateChatUnreadCount();
+                });
+            }
+        });
+
+        function updateChatUnreadCount() {
+            fetch('/api/chat/unread_count')
+            .then(res => res.json())
+            .then(data => {
+                const badge = document.getElementById('sidebarChatBadge');
+                if (badge && data.success) {
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 99 ? '99+' : data.count;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(() => {});
+        }
+
+        function mostrarNotificacaoComunicado(data) {
+            const container = document.getElementById('globalToastContainer');
+            const toast = document.createElement('div');
+            
+            let borderColor = '#2563eb'; // azul padrão (Aviso)
+            if(data.tipo && data.tipo.toLowerCase().includes('urgente')) borderColor = '#ef4444';
+            else if(data.tipo && data.tipo.toLowerCase().includes('novidade')) borderColor = '#10b981';
+            else if(data.tipo && data.tipo.toLowerCase().includes('aviso')) borderColor = '#f59e0b';
+            
+            toast.style.cssText = `
+                background: #ffffff;
+                border-left: 5px solid ${borderColor};
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                border-radius: 8px;
+                padding: 16px 20px;
+                min-width: 300px;
+                max-width: 400px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                animation: slideInRight 0.3s ease forwards;
+                cursor: pointer;
+            `;
+            
+            toast.innerHTML = `
+                <div style="font-size: 1.5rem; color: ${borderColor}; margin-top:2px;">
+                    <i class="fas fa-bullhorn"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h4 style="margin: 0 0 4px; font-size: 1rem; color: #1e293b; font-weight: 700;">Novo Comunicado!</h4>
+                    <p style="margin: 0 0 6px; font-size: 0.9rem; color: #475569;"><strong>${data.titulo}</strong></p>
+                    <p style="margin: 0; font-size: 0.8rem; color: #94a3b8;">Por: ${data.autor.split('@')[0]}</p>
+                </div>
+                <button style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;" onclick="this.parentElement.style.animation='slideOutRight 0.3s ease forwards'; setTimeout(()=>this.parentElement.remove(), 300); event.stopPropagation();">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            toast.addEventListener('click', function() {
+                window.location.href = "{{ url_for('comunicados_page') }}";
+            });
+            
+            container.appendChild(toast);
+            
+            // Som de alerta leve
+            try {
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                audio.volume = 0.5;
+                audio.play().catch(e => {}); // Ignore errors se browser bloquear autoplay
+            } catch(e) {}
+            
+            setTimeout(() => {
+                if(toast.parentElement) {
+                    toast.style.animation = 'slideOutRight 0.3s ease forwards';
+                    setTimeout(() => { if(toast.parentElement) toast.remove(); }, 300);
+                }
+            }, 10000);
+        }
+        // --- MENSAGEM DE BOAS-VINDAS ---
+        {% if session.get('show_welcome') %}
+        (function() {
+            setTimeout(() => {
+                const welcomeContainer = document.getElementById('comunicados-toasts-container') || document.body;
+                const welcomeToast = document.createElement('div');
+                welcomeToast.style.cssText = `
+                    position: fixed; top: 30px; right: 30px; z-index: 9999;
+                    background: var(--bg-panel); color: var(--text-main);
+                    border: 1px solid var(--border-color);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    border-radius: 12px; padding: 12px 20px; min-width: 280px;
+                    display: flex; align-items: center; gap: 15px;
+                    animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                `;
+                welcomeToast.innerHTML = `
+                    <div style="color: var(--primary); font-size: 1.6rem; display: flex; align-items: center;">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 1px;">
+                        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700;">Bem-vindo ao sistema da Consig Tech!</h4>
+                        <p style="margin: 0; font-size: 0.82rem; opacity: 0.8; font-weight: 500;">Olá, {{ session.get('user_nome', 'Usuário') }} 👋</p>
+                    </div>
+                `;
+                welcomeContainer.appendChild(welcomeToast);
+                
+                // Limpa a flag no servidor para não repetir
+                fetch('/api/clear_welcome');
+
+                setTimeout(() => {
+                    welcomeToast.style.animation = 'slideOutRight 0.5s ease forwards';
+                    setTimeout(() => welcomeToast.remove(), 500);
+                }, 3500);
+            }, 800);
+        })();
+        {% endif %}
+    </script>
+    <style>
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+    </style>
+</body>
+</html>
