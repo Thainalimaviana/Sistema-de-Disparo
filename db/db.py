@@ -126,53 +126,60 @@ def safe_add_column(cursor, table, column, definition):
             print(f"Erro ao adicionar coluna {column} na tabela {table}: {e}")
 
 def init_db():
-    """Inicializa o banco de dados e cria a tabela se não existir."""
+    """Inicializa o banco de dados e cria as tabelas se não existirem."""
     conn = connect()
     cursor = conn.cursor()
     
     _serial_pk = "SERIAL PRIMARY KEY" if IS_POSTGRES else "INTEGER PRIMARY KEY AUTOINCREMENT"
     _ts = "TIMESTAMP" if IS_POSTGRES else "DATETIME"
+    _blob = "BYTEA" if IS_POSTGRES else "BLOB"
     
+    # 1. Usuários
     cursor.execute(f'''
         CREATE TABLE IF NOT EXISTS usuarios (
-            id {_serial_pk},
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            nome TEXT DEFAULT '',
-            email TEXT DEFAULT '',
-            papel TEXT DEFAULT 'vendedor',
-            localizacao TEXT DEFAULT '',
-            lat REAL,
-            lng REAL,
-            ip TEXT,
-            ativo INTEGER DEFAULT 1,
-            criado_em {_ts},
-            foto TEXT DEFAULT ''
+            id {_serial_pk}, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL,
+            nome TEXT DEFAULT '', email TEXT DEFAULT '', papel TEXT DEFAULT 'vendedor',
+            localizacao TEXT DEFAULT '', lat REAL, lng REAL, ip TEXT, ativo INTEGER DEFAULT 1,
+            criado_em {_ts}, foto TEXT DEFAULT ''
         )
     ''')
-    # Colunas adicionais (compatibilidade com bancos antigos)
-    cursor.execute("INSERT OR IGNORE INTO configuracoes (chave, valor) VALUES ('dist_auto_ativa', '0')")
-    cursor.execute("INSERT OR IGNORE INTO configuracoes (chave, valor) VALUES ('dist_auto_qtd', '10')")
     
-    cursor.execute(f'''
-    CREATE TABLE IF NOT EXISTS conversas_fixadas (
-        id {_serial_pk},
-        usuario_username TEXT NOT NULL,
-        target_id TEXT NOT NULL,
-        criado_em {_ts} DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(usuario_username, target_id)
-    )
+    # 2. Configurações (A TABELA QUE FALTAVA E CAUSAVA O CRASH)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS configuracoes (
+            chave TEXT PRIMARY KEY,
+            valor TEXT
+        )
     ''')
 
-    cursor.execute(f'''
-    CREATE TABLE IF NOT EXISTS chat_ultima_leitura (
-        id {_serial_pk},
-        usuario_username TEXT NOT NULL,
-        canal TEXT NOT NULL DEFAULT 'geral',
-        lido_em {_ts} DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(usuario_username, canal)
-    )
-    ''')
+    # 3. Demais tabelas do sistema
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS comunicados (id {_serial_pk}, titulo TEXT, tipo TEXT, mensagem TEXT, autor TEXT, fixado INTEGER DEFAULT 0, lido_por TEXT DEFAULT '', arquivado_por TEXT DEFAULT '', criado_em {_ts} DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS bancos (id {_serial_pk}, nome TEXT, codigo TEXT, ativo BOOLEAN DEFAULT 1, data_inativacao {_ts}, criado_em {_ts} DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS solicitacoes_leads (id {_serial_pk}, vendedor TEXT, quantidade_solicitada INTEGER, banco_id INTEGER, banco_nome TEXT, observacao TEXT, status TEXT DEFAULT 'pendente', quantidade_enviada INTEGER DEFAULT 0, atualizado_em {_ts}, criado_em {_ts} DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS clientes (id {_serial_pk}, nome TEXT, cpf TEXT, telefone1 TEXT, telefone2 TEXT, telefone3 TEXT, telefone4 TEXT, margem REAL, margem_verificada REAL, whatsapp TEXT, sexo TEXT, idade INTEGER, rua TEXT, bairro TEXT, cep TEXT, cidade TEXT, estado TEXT, banco_id INTEGER, banco_nome TEXT, lote_id INTEGER, status TEXT DEFAULT 'pendente', vendedor_id INTEGER, vendedor_nome TEXT, importado_em {_ts} DEFAULT CURRENT_TIMESTAMP, atribuido_em {_ts}, data_tabulacao {_ts}, bancos_elegiveis TEXT, observacao TEXT)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS vendedores (id {_serial_pk}, nome TEXT, username TEXT, telefone TEXT, ativo INTEGER DEFAULT 1)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS lotes_importados (id {_serial_pk}, nome_arquivo TEXT, banco_id INTEGER, banco_nome TEXT, quantidade_leads INTEGER, importado_por TEXT, arquivo_blob {_blob}, criado_em {_ts} DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS scripts (id {_serial_pk}, titulo TEXT, categoria TEXT, conteudo TEXT, publicado INTEGER DEFAULT 0, atualizado_em {_ts} DEFAULT CURRENT_TIMESTAMP, fixado INTEGER DEFAULT 0)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS logs (id {_serial_pk}, usuario TEXT, acao TEXT, detalhe TEXT, ip TEXT, localizacao TEXT, criado_em {_ts} DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS canais (id TEXT PRIMARY KEY, nome TEXT, privacidade TEXT, criado_por TEXT, criado_em {_ts} DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS membros_canal (canal_id TEXT, usuario_username TEXT, UNIQUE(canal_id, usuario_username))")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS mensagens_chat (id {_serial_pk}, remetente TEXT, nome_exibicao TEXT, destinatario TEXT, mensagem TEXT, enviado_em {_ts} DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS conversas_fixadas (id {_serial_pk}, usuario_username TEXT NOT NULL, target_id TEXT NOT NULL, criado_em {_ts} DEFAULT CURRENT_TIMESTAMP, UNIQUE(usuario_username, target_id))")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS chat_ultima_leitura (id {_serial_pk}, usuario_username TEXT NOT NULL, canal TEXT NOT NULL DEFAULT 'geral', lido_em {_ts} DEFAULT CURRENT_TIMESTAMP, UNIQUE(usuario_username, canal))")
+
+    # Inserções Iniciais Básicas
+    cursor.execute("INSERT OR IGNORE INTO configuracoes (chave, valor) VALUES ('dist_auto_ativa', '0')")
+    cursor.execute("INSERT OR IGNORE INTO configuracoes (chave, valor) VALUES ('dist_auto_qtd', '10')")
+
+    cursor.execute("SELECT COUNT(*) FROM usuarios")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+            INSERT INTO usuarios (username, password, papel, nome, email, ativo) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, ('admin@consigtech.com', 'senha123', 'admin', 'Administrador', 'admin@consigtech.com', True))
+    
+    conn.commit()
+    conn.close()
     
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     if cursor.fetchone()[0] == 0:

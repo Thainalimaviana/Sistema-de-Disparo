@@ -1,4 +1,4 @@
-
+import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import math
 from datetime import datetime
@@ -51,11 +51,16 @@ def get_client_ip():
         return request.headers.get('X-Forwarded-For').split(',')[0]
     return request.remote_addr
 
-init_db()
+import traceback
 
-# ============================================================
-# ROTAS DE AUTENTICAÇÃO
-# ============================================================
+try:
+    init_db()
+except Exception as e:
+    print("\n" + "="*50)
+    print("ERRO CRÍTICO AO INICIALIZAR O BANCO DE DADOS:")
+    print("Isso geralmente impede a aplicação de rodar no Render.")
+    traceback.print_exc()
+    print("="*50 + "\n")
 
 @app.route('/')
 def login_page():
@@ -1699,4 +1704,5 @@ def clear_welcome():
     return jsonify({'success': True})
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
