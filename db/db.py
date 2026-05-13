@@ -58,23 +58,36 @@ class PgCursorWrapper:
     def __init__(self, cursor):
         self._cursor = cursor
         self._lastrowid = None
+        
     def execute(self, sql, params=None):
         sql = adapt_sql(sql)
+        
+        # Executa o comando principal
         if params is not None:
             self._cursor.execute(sql, params)
         else:
             self._cursor.execute(sql)
-        if sql.strip().upper().startswith('INSERT'):
+            
+        # Tenta pegar o lastval sem quebrar a transação se não houver sequence
+        if sql.strip().upper().startswith('INSERT') and self._cursor.rowcount > 0:
             try:
+                self._cursor.execute("SAVEPOINT get_lastval")
                 self._cursor.execute("SELECT lastval()")
                 self._lastrowid = self._cursor.fetchone()[0]
-            except: pass
+                self._cursor.execute("RELEASE SAVEPOINT get_lastval")
+            except Exception:
+                self._cursor.execute("ROLLBACK TO SAVEPOINT get_lastval")
+                self._lastrowid = None
+
     def fetchone(self): return self._cursor.fetchone()
     def fetchall(self): return self._cursor.fetchall()
+    
     @property
     def lastrowid(self): return self._lastrowid
+    
     @property
     def description(self): return self._cursor.description
+    
     @property
     def rowcount(self): return self._cursor.rowcount
 
