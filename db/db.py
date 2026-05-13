@@ -1403,35 +1403,35 @@ def buscar_mensagens_chat(usuario1, usuario2='geral', limite=100):
     fmt_data = "strftime('%d/%m/%Y', enviado_em)"
     
     if usuario2 == 'geral':
-    cursor.execute(f"""
-        SELECT id, remetente, nome_exibicao, destinatario, mensagem,
-               {fmt_hora} as hora,
-               {fmt_data} as data,
-               enviado_em
-        FROM mensagens_chat
-        WHERE destinatario = 'geral'
-        ORDER BY enviado_em DESC LIMIT ?
-    """, (limite,))
+        cursor.execute(f"""
+            SELECT id, remetente, nome_exibicao, destinatario, mensagem,
+                   {fmt_hora} as hora,
+                   {fmt_data} as data,
+                   enviado_em
+            FROM mensagens_chat
+            WHERE destinatario = 'geral'
+            ORDER BY enviado_em DESC LIMIT ?
+        """, (limite,))
     elif usuario2.startswith('canal_'):
-    cursor.execute(f"""
-        SELECT id, remetente, nome_exibicao, destinatario, mensagem,
-               {fmt_hora} as hora,
-               {fmt_data} as data,
-               enviado_em
-        FROM mensagens_chat
-        WHERE destinatario = ?
-        ORDER BY enviado_em DESC LIMIT ?
-    """, (usuario2, limite))
+        cursor.execute(f"""
+            SELECT id, remetente, nome_exibicao, destinatario, mensagem,
+                   {fmt_hora} as hora,
+                   {fmt_data} as data,
+                   enviado_em
+            FROM mensagens_chat
+            WHERE destinatario = ?
+            ORDER BY enviado_em DESC LIMIT ?
+        """, (usuario2, limite))
     else:
-    cursor.execute(f"""
-        SELECT id, remetente, nome_exibicao, destinatario, mensagem,
-               {fmt_hora} as hora,
-               {fmt_data} as data,
-               enviado_em
-        FROM mensagens_chat
-        WHERE (remetente = ? AND destinatario = ?) OR (remetente = ? AND destinatario = ?)
-        ORDER BY enviado_em DESC LIMIT ?
-    """, (usuario1, usuario2, usuario2, usuario1, limite))
+        cursor.execute(f"""
+            SELECT id, remetente, nome_exibicao, destinatario, mensagem,
+                   {fmt_hora} as hora,
+                   {fmt_data} as data,
+                   enviado_em
+            FROM mensagens_chat
+            WHERE (remetente = ? AND destinatario = ?) OR (remetente = ? AND destinatario = ?)
+            ORDER BY enviado_em DESC LIMIT ?
+        """, (usuario1, usuario2, usuario2, usuario1, limite))
     
     rows = cursor.fetchall()
     conn.close()
@@ -1561,7 +1561,7 @@ def listar_scripts(apenas_publicados=False):
     fmt_data = "strftime('%d/%m/%Y %H:%M', atualizado_em)"
     query = f"SELECT id, titulo, categoria, conteudo, publicado, {fmt_data}, fixado FROM scripts"
     if apenas_publicados:
-    query += " WHERE publicado = 1"
+        query += " WHERE publicado = 1"
     query += " ORDER BY fixado DESC, categoria ASC, atualizado_em DESC"
     cursor.execute(query)
     rows = cursor.fetchall()
@@ -1694,7 +1694,7 @@ def salvar_canal(canal_id, nome, privacidade, criado_por, membros):
     # Atualiza membros: remove antigos e insere novos
     cursor.execute("DELETE FROM membros_canal WHERE canal_id = ?", (canal_id,))
     for m in membros:
-    cursor.execute("INSERT INTO membros_canal (canal_id, usuario_username) VALUES (?,?)", (canal_id, m))
+        cursor.execute("INSERT INTO membros_canal (canal_id, usuario_username) VALUES (?,?)", (canal_id, m))
     
     conn.commit()
     conn.close()
