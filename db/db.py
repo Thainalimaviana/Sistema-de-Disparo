@@ -23,14 +23,35 @@ def adapt_sql(sql):
     """Converte SQL estilo SQLite para PostgreSQL automaticamente."""
     if not IS_POSTGRES:
         return sql
+    
     result = sql.replace('?', '%s')
+    
+    # 1. Ajustes de Tipos e PK
     if 'CREATE TABLE' in result.upper() or 'ALTER TABLE' in result.upper():
         result = re.sub(r'INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 'SERIAL PRIMARY KEY', result, flags=re.IGNORECASE)
         result = re.sub(r'\bDATETIME\b', 'TIMESTAMP', result, flags=re.IGNORECASE)
+    
+    # 2. Funções de Data
     result = re.sub(r"DATE\s*\(\s*([\w\.]+)\s*\)", r"\1::DATE", result, flags=re.IGNORECASE)
     result = re.sub(r"datetime\s*\(\s*'now'\s*\)", "NOW()", result, flags=re.IGNORECASE)
-    result = re.sub(r"INSERT\s+OR\s+IGNORE\s+INTO", "INSERT INTO", result, flags=re.IGNORECASE)
-    result = re.sub(r"INSERT\s+OR\s+REPLACE\s+INTO", "INSERT INTO", result, flags=re.IGNORECASE)
+    result = re.sub(r"datetime\s*\(\s*'now'\s*,\s*'-3 hours'\s*\)", "NOW() - INTERVAL '3 hours'", result, flags=re.IGNORECASE)
+
+    # 3. Tratar INSERT OR IGNORE -> ON CONFLICT DO NOTHING
+    if "INSERT OR IGNORE INTO" in result.upper():
+        result = re.sub(r"INSERT\s+OR\s+IGNORE\s+INTO\s+([\w\d_]+)", r"INSERT INTO \1", result, flags=re.IGNORECASE)
+        if "ON CONFLICT" not in result.upper():
+            result = result.rstrip(';') + " ON CONFLICT DO NOTHING"
+
+    # 4. Tratar INSERT OR REPLACE -> ON CONFLICT DO UPDATE
+    if "INSERT OR REPLACE INTO" in result.upper():
+        result = re.sub(r"INSERT\s+OR\s+REPLACE\s+INTO\s+([\w\d_]+)", r"INSERT INTO \1", result, flags=re.IGNORECASE)
+        if "configuracoes" in result.lower():
+            result = result.rstrip(';') + " ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor"
+        elif "chat_ultima_leitura" in result.lower():
+            result = result.rstrip(';') + " ON CONFLICT (usuario_username, canal) DO UPDATE SET lido_em = EXCLUDED.lido_em"
+        elif "canais" in result.lower():
+            result = result.rstrip(';') + " ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome, privacidade = EXCLUDED.privacidade, criado_por = EXCLUDED.criado_por"
+
     return result
 
 class PgCursorWrapper:
@@ -80,7 +101,6 @@ def connect(db_name=None):
     if IS_POSTGRES:
         return PgConnectionWrapper(psycopg2.connect(DATABASE_URL))
     return sqlite3.connect(db_name or DB_NAME)
-
 
 def safe_add_column(cursor, table, column, definition):
     """Adiciona uma coluna à tabela se ela não existir (SQLite)."""
@@ -331,8 +351,9 @@ def listar_bancos(apenas_ativos=True):
     """Retorna os bancos cadastrados."""
     conn = connect()
     cursor = conn.cursor()
-    fmt_criado = "strftime('%d/%m/%Y', criado_em)"
-    fmt_inativacao = "strftime('%d/%m/%Y', data_inativacao)"
+    fmt_criado = "TO_CHAR(criado_em, 'DD/MM/YYYY')" if IS_POSTGRES else "strftime('%d/%m/%Y', criado_em)"
+    fmt_inativacao = "TO_CHAR(data_inativacao, 'DD/MM/YYYY')" if IS_POSTGRES else "strftime('%d/%m/%Y', data_inativacao)"
+    
     if apenas_ativos:
         cursor.execute(f"SELECT id, nome, codigo, ativo, {fmt_criado} as d1, {fmt_inativacao} as d2 FROM bancos WHERE ativo = ? ORDER BY nome", (True,))
     else:
@@ -352,10 +373,10 @@ def alternar_status_banco(banco_id):
         novo_status = False if esta_ativo else True
         if not novo_status:
             # Inativando: setar data_inativacao
-            cursor.execute("UPDATE bancos SET ativo = ?, data_inativacao = datetime('now') WHERE id = ?", (novo_status, banco_id))
-    else:
-        # Ativando: limpar data_inativacao
-        cursor.execute("UPDATE bancos SET ativo = ?, data_inativacao = NULL WHERE id = ?", (novo_status, banco_id))
+            cursor.execute("UPDATE bancos SET ativo = ?, data_inativacao = CURRENT_TIMESTAMP WHERE id = ?", (novo_status, banco_id))
+        else:
+            # Ativando: limpar data_inativacao
+            cursor.execute("UPDATE bancos SET ativo = ?, data_inativacao = NULL WHERE id = ?", (novo_status, banco_id))
     conn.commit()
     conn.close()
 
@@ -444,7 +465,7 @@ def aprovar_solicitacao(sol_id, quantidade_enviada, aprovado_por):
     cursor.execute(
         """UPDATE solicitacoes_leads 
            SET status='aprovada', quantidade_enviada=?, 
-               atualizado_em=datetime('now'), observacao=?
+               atualizado_em=CURRENT_TIMESTAMP, observacao=?
            WHERE id=?""",
         (quantidade_enviada, f'Aprovado por {aprovado_por}', sol_id)
     )
@@ -457,7 +478,7 @@ def rejeitar_solicitacao(sol_id, motivo=''):
     cursor = conn.cursor()
     cursor.execute(
         """UPDATE solicitacoes_leads 
-           SET status='rejeitada', atualizado_em=datetime('now'), observacao=?
+           SET status='rejeitada', atualizado_em=CURRENT_TIMESTAMP, observacao=?
            WHERE id=?""",
         (motivo or 'Rejeitado pelo administrador', sol_id)
     )
@@ -465,7 +486,6 @@ def rejeitar_solicitacao(sol_id, motivo=''):
     conn.close()
 
 # ── Estatísticas Dinâmicas ──
-
 
 def get_clientes_por_banco():
     """Retorna contagem de clientes pendentes agrupada por banco e data de importação (Lote/Base)."""
@@ -488,6 +508,10 @@ def get_clientes_por_banco():
         dt_imp = r[2]
         total = r[3]
         
+        # Correção para o objeto datetime.date retornado no Postgres
+        if dt_imp and not isinstance(dt_imp, str):
+            dt_imp = dt_imp.isoformat()
+
         identificador = f"{b_id}|{dt_imp}" if dt_imp else str(b_id)
         
         # Formatar exibição
@@ -624,7 +648,6 @@ def obter_dashboard_stats(data_inicio=None, data_fim=None, vendedor_id=None):
     nao_elegiveis = cursor.fetchone()[0]
 
     # 4. Não Distribuídos (Pendentes na base geral)
-    # Se estiver filtrando por vendedor, esse número será 0 pois pendentes não têm dono
     where_pendente = where_clause + " AND vendedor_id IS NULL"
     cursor.execute(f"SELECT COUNT(*) FROM clientes {where_pendente}", tuple(params))
     nao_distribuidos = cursor.fetchone()[0]
@@ -723,7 +746,7 @@ def distribuir_clientes(vendedor_id, vendedor_nome, banco_id, quantidade):
         placeholders = ','.join('?' * len(ids))
         cursor.execute(
             f"""UPDATE clientes SET status='atribuido', vendedor_id=?, vendedor_nome=?,
-                atribuido_em=datetime('now') WHERE id IN ({placeholders})""",
+                atribuido_em=CURRENT_TIMESTAMP WHERE id IN ({placeholders})""",
             [vendedor_id, vendedor_nome] + ids
         )
     conn.commit()
@@ -964,9 +987,14 @@ def salvar_tabulacao_cliente(cliente_id, vendedor_id, status, bancos_elegiveis, 
         conn.close()
         return False
         
-    cursor.execute('''
+    if IS_POSTGRES:
+        data_tabulacao = "NOW() - INTERVAL '3 hours'"
+    else:
+        data_tabulacao = "datetime('now', '-3 hours')"
+
+    cursor.execute(f'''
         UPDATE clientes 
-        SET status=?, bancos_elegiveis=?, margem_verificada=?, margem=?, observacao=?, data_tabulacao=datetime('now', '-3 hours')
+        SET status=?, bancos_elegiveis=?, margem_verificada=?, margem=?, observacao=?, data_tabulacao={data_tabulacao}
         WHERE id=?
     ''', (status, bancos_elegiveis, margem_verificada, margem_verificada, observacao, cliente_id))
     
@@ -1010,7 +1038,6 @@ def editar_cliente_vendedor(cliente_id, vendedor_id, dados):
     conn.commit()
     conn.close()
     return True
-
 
 def obter_ultimos_clientes_trabalhados(vendedor_id, limite=5):
     """Retorna os últimos N clientes tabulados pelo vendedor."""
@@ -1257,7 +1284,9 @@ def listar_usuarios():
     """Lista todos os usuários com seus dados completos."""
     conn = connect()
     cursor = conn.cursor()
-    fmt_data = "COALESCE(strftime('%d/%m/%Y', criado_em), 'Sem data')"
+    
+    fmt_data = "COALESCE(TO_CHAR(criado_em, 'DD/MM/YYYY'), 'Sem data')" if IS_POSTGRES else "COALESCE(strftime('%d/%m/%Y', criado_em), 'Sem data')"
+    
     cursor.execute(f"""
     SELECT id, username, nome, email, papel, localizacao, ativo,
            {fmt_data} as criado_fmt, foto,
@@ -1399,8 +1428,8 @@ def buscar_mensagens_chat(usuario1, usuario2='geral', limite=100):
     conn = connect()
     cursor = conn.cursor()
     
-    fmt_hora = "strftime('%H:%M', enviado_em)"
-    fmt_data = "strftime('%d/%m/%Y', enviado_em)"
+    fmt_hora = "TO_CHAR(enviado_em, 'HH24:MI')" if IS_POSTGRES else "strftime('%H:%M', enviado_em)"
+    fmt_data = "TO_CHAR(enviado_em, 'DD/MM/YYYY')" if IS_POSTGRES else "strftime('%d/%m/%Y', enviado_em)"
     
     if usuario2 == 'geral':
         cursor.execute(f"""
@@ -1501,7 +1530,10 @@ def get_analytics_dashboard(data_inicio=None, data_fim=None):
         where_tab += " AND data_tabulacao >= ?"
         params_tab.append(f"{data_inicio} 00:00:00")
     else:
-        where_tab += " AND data_tabulacao >= date('now', '-7 days')"
+        if IS_POSTGRES:
+            where_tab += " AND data_tabulacao >= NOW() - INTERVAL '7 days'"
+        else:
+            where_tab += " AND data_tabulacao >= date('now', '-7 days')"
     if data_fim:
         where_tab += " AND data_tabulacao <= ?"
         params_tab.append(f"{data_fim} 23:59:59")
@@ -1529,11 +1561,14 @@ def get_analytics_dashboard(data_inicio=None, data_fim=None):
     evolucao_diaria = {'labels': [], 'data': []}
     for d, c in evolucao_raw:
         try:
+            # No PostgreSQL, DATE() retorna um objeto datetime.date
+            if not isinstance(d, str):
+                d = d.isoformat()
             # Formata data para DD/MM
             parts = d.split('-')
             lbl = f"{parts[2]}/{parts[1]}"
         except:
-            lbl = d
+            lbl = str(d)
         evolucao_diaria['labels'].append(lbl)
         evolucao_diaria['data'].append(c)
 
@@ -1558,7 +1593,9 @@ def listar_scripts(apenas_publicados=False):
     """Lista todos os scripts do banco de dados, priorizando fixados."""
     conn = connect()
     cursor = conn.cursor()
-    fmt_data = "strftime('%d/%m/%Y %H:%M', atualizado_em)"
+    
+    fmt_data = "TO_CHAR(atualizado_em, 'DD/MM/YYYY HH24:MI')" if IS_POSTGRES else "strftime('%d/%m/%Y %H:%M', atualizado_em)"
+    
     query = f"SELECT id, titulo, categoria, conteudo, publicado, {fmt_data}, fixado FROM scripts"
     if apenas_publicados:
         query += " WHERE publicado = 1"
@@ -1571,6 +1608,7 @@ def listar_scripts(apenas_publicados=False):
     'conteudo': r[3], 'publicado': bool(r[4]), 'data': r[5],
     'fixado': bool(r[6])
     } for r in rows]
+
 def adicionar_script(titulo, categoria, conteudo):
     """Cria um novo script (como rascunho por padrão)."""
     conn = connect()
@@ -1641,8 +1679,11 @@ def buscar_logs(limit=50, offset=0, data_inicio=None, data_fim=None, usuario_fil
     params = []
     
     if data_inicio:
-        base_query += " AND datetime(criado_em, '-3 hours') >= ?"
-    params.append(f"{data_inicio} 00:00:00")
+        if IS_POSTGRES:
+            base_query += " AND (criado_em - INTERVAL '3 hours') >= ?"
+        else:
+            base_query += " AND datetime(criado_em, '-3 hours') >= ?"
+        params.append(f"{data_inicio} 00:00:00")
     if data_fim:
         if IS_POSTGRES:
             base_query += " AND (criado_em - INTERVAL '3 hours') <= ?"
@@ -1684,6 +1725,7 @@ def buscar_logs(limit=50, offset=0, data_inicio=None, data_fim=None, usuario_fil
         'ip': r[3], 'localizacao': r[4], 'data': r[5]
     } for r in rows]
     }
+
 def salvar_canal(canal_id, nome, privacidade, criado_por, membros):
     """Salva ou atualiza um canal e seus membros."""
     conn = connect()
@@ -1763,8 +1805,10 @@ def buscar_historico_monitor(alvo, limit=100, offset=0):
     """Busca o histórico completo de mensagens onde o alvo seja o rementente ou destinatário."""
     conn = connect()
     cursor = conn.cursor()
-    fmt_hora = "strftime('%H:%M', enviado_em)"
-    fmt_data = "strftime('%d/%m/%Y', enviado_em)"
+    
+    fmt_hora = "TO_CHAR(enviado_em, 'HH24:MI')" if IS_POSTGRES else "strftime('%H:%M', enviado_em)"
+    fmt_data = "TO_CHAR(enviado_em, 'DD/MM/YYYY')" if IS_POSTGRES else "strftime('%d/%m/%Y', enviado_em)"
+    
     cursor.execute(f"""
     SELECT id, remetente, nome_exibicao, destinatario, mensagem,
            {fmt_hora} as hora,
@@ -1811,7 +1855,6 @@ def buscar_conversas_fixadas(username):
     conn.close()
     return [r[0] for r in rows]
 
-
 # ── Notificações do Chat (mensagens não lidas) ──
 
 def contar_mensagens_chat_nao_lidas(username):
@@ -1843,7 +1886,6 @@ def contar_mensagens_chat_nao_lidas(username):
     count = cursor.fetchone()[0]
     conn.close()
     return count
-
 
 def atualizar_ultima_leitura_chat(username, canal='geral'):
     """Atualiza o timestamp da última leitura do chat para o usuário."""
