@@ -9,44 +9,76 @@ import sqlite3
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, 'sistema.db')
 Row = sqlite3.Row
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+IS_POSTGRES = bool(DATABASE_URL)
 
+if IS_POSTGRES:
+    import psycopg2
+    import psycopg2.extras
 
+def adapt_sql(sql):
+    """Converte SQL estilo SQLite para PostgreSQL automaticamente."""
+    if not IS_POSTGRES:
+        return sql
+    result = sql.replace('?', '%s')
+    if 'CREATE TABLE' in result.upper() or 'ALTER TABLE' in result.upper():
+        result = re.sub(r'INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 'SERIAL PRIMARY KEY', result, flags=re.IGNORECASE)
+        result = re.sub(r'\bDATETIME\b', 'TIMESTAMP', result, flags=re.IGNORECASE)
+    result = re.sub(r"DATE\s*\(\s*([\w\.]+)\s*\)", r"\1::DATE", result, flags=re.IGNORECASE)
+    result = re.sub(r"datetime\s*\(\s*'now'\s*\)", "NOW()", result, flags=re.IGNORECASE)
+    result = re.sub(r"INSERT\s+OR\s+IGNORE\s+INTO", "INSERT INTO", result, flags=re.IGNORECASE)
+    result = re.sub(r"INSERT\s+OR\s+REPLACE\s+INTO", "INSERT INTO", result, flags=re.IGNORECASE)
+    return result
+
+class PgCursorWrapper:
+    def __init__(self, cursor):
+        self._cursor = cursor
+        self._lastrowid = None
+    def execute(self, sql, params=None):
+        sql = adapt_sql(sql)
+        if params is not None:
+            self._cursor.execute(sql, params)
+        else:
+            self._cursor.execute(sql)
+        if sql.strip().upper().startswith('INSERT'):
+            try:
+                self._cursor.execute("SELECT lastval()")
+                self._lastrowid = self._cursor.fetchone()[0]
+            except: pass
+    def fetchone(self): return self._cursor.fetchone()
+    def fetchall(self): return self._cursor.fetchall()
+    @property
+    def lastrowid(self): return self._lastrowid
+    @property
+    def description(self): return self._cursor.description
+    @property
+    def rowcount(self): return self._cursor.rowcount
 
 class PgConnectionWrapper:
-    """Wrapper de conexão psycopg2 compatível com interface sqlite3."""
-
     def __init__(self, conn):
         self._conn = conn
         self._row_factory = None
-
     @property
-    def row_factory(self):
-        return self._row_factory
-
+    def row_factory(self): return self._row_factory
     @row_factory.setter
-    def row_factory(self, value):
-        self._row_factory = value
-
+    def row_factory(self, value): self._row_factory = value
     def cursor(self):
         if self._row_factory:
             cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         else:
             cur = self._conn.cursor()
         return PgCursorWrapper(cur)
-
-    def commit(self):
-        self._conn.commit()
-
-    def rollback(self):
-        self._conn.rollback()
-
-    def close(self):
-        self._conn.close()
-
+    def commit(self): self._conn.commit()
+    def rollback(self): self._conn.rollback()
+    def close(self): self._conn.close()
 
 def connect(db_name=None):
     """Substituto direto para sqlite3.connect(). Retorna conexão SQLite ou PostgreSQL."""
+    if IS_POSTGRES:
+        return PgConnectionWrapper(psycopg2.connect(DATABASE_URL))
     return sqlite3.connect(db_name or DB_NAME)
 
 
@@ -111,11 +143,11 @@ def init_db():
     
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     if cursor.fetchone()[0] == 0:
-    # Incluímos 'nome', 'email' e 'ativo' para evitar erros de restrição NOT NULL em bancos antigos
-    cursor.execute("""
-        INSERT INTO usuarios (username, password, papel, nome, email, ativo) 
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, ('admin@consigtech.com', 'senha123', 'admin', 'Administrador', 'admin@consigtech.com', True))
+        # Incluímos 'nome', 'email' e 'ativo' para evitar erros de restrição NOT NULL em bancos antigos
+        cursor.execute("""
+            INSERT INTO usuarios (username, password, papel, nome, email, ativo) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, ('admin@consigtech.com', 'senha123', 'admin', 'Administrador', 'admin@consigtech.com', True))
     
     conn.commit()
     conn.close()
@@ -147,17 +179,18 @@ def verificar_login(username, password):
     except Exception as e:
         if "no such column: foto" in str(e):
             # Fallback para bancos sem a coluna foto ainda. No Postgres, resetamos a transação.
+            pass
         conn.close()
         raise e
     conn.close()
     if user:
-    return {
-        'id': user[0], 
-        'username': user[1], 
-        'papel': user[2], 
-        'nome': user[3],
-        'foto': user[4] if len(user) > 4 else ''
-    }
+        return {
+            'id': user[0], 
+            'username': user[1], 
+            'papel': user[2], 
+            'nome': user[3],
+            'foto': user[4] if len(user) > 4 else ''
+        }
     return None
 
 def salvar_comunicado(titulo, tipo, mensagem, autor, fixado=0):
@@ -301,9 +334,9 @@ def listar_bancos(apenas_ativos=True):
     fmt_criado = "strftime('%d/%m/%Y', criado_em)"
     fmt_inativacao = "strftime('%d/%m/%Y', data_inativacao)"
     if apenas_ativos:
-    cursor.execute(f"SELECT id, nome, codigo, ativo, {fmt_criado} as d1, {fmt_inativacao} as d2 FROM bancos WHERE ativo = ? ORDER BY nome", (True,))
+        cursor.execute(f"SELECT id, nome, codigo, ativo, {fmt_criado} as d1, {fmt_inativacao} as d2 FROM bancos WHERE ativo = ? ORDER BY nome", (True,))
     else:
-    cursor.execute(f"SELECT id, nome, codigo, ativo, {fmt_criado} as d1, {fmt_inativacao} as d2 FROM bancos ORDER BY ativo DESC, nome")
+        cursor.execute(f"SELECT id, nome, codigo, ativo, {fmt_criado} as d1, {fmt_inativacao} as d2 FROM bancos ORDER BY ativo DESC, nome")
     rows = cursor.fetchall()
     conn.close()
     return [{'id': r[0], 'nome': r[1], 'codigo': r[2], 'status': bool(r[3]), 'data_criacao': r[4], 'data_inativacao': r[5] or '-'} for r in rows]
@@ -775,11 +808,11 @@ def registrar_lote_importado(nome_arquivo, banco_id, banco_nome, quantidade_lead
     novo_id = cursor.lastrowid if hasattr(cursor, 'lastrowid') and cursor.lastrowid else None
     
     if IS_POSTGRES and not novo_id:
-    try:
-        cursor.execute("SELECT MAX(id) FROM lotes_importados")
-        novo_id = cursor.fetchone()[0]
-    except:
-        pass
+        try:
+            cursor.execute("SELECT MAX(id) FROM lotes_importados")
+            novo_id = cursor.fetchone()[0]
+        except:
+            pass
         
     conn.close()
     return novo_id
@@ -1611,17 +1644,17 @@ def buscar_logs(limit=50, offset=0, data_inicio=None, data_fim=None, usuario_fil
         base_query += " AND datetime(criado_em, '-3 hours') >= ?"
     params.append(f"{data_inicio} 00:00:00")
     if data_fim:
-    if IS_POSTGRES:
-        base_query += " AND (criado_em - INTERVAL '3 hours') <= ?"
-    else:
-        base_query += " AND datetime(criado_em, '-3 hours') <= ?"
-    params.append(f"{data_fim} 23:59:59")
+        if IS_POSTGRES:
+            base_query += " AND (criado_em - INTERVAL '3 hours') <= ?"
+        else:
+            base_query += " AND datetime(criado_em, '-3 hours') <= ?"
+        params.append(f"{data_fim} 23:59:59")
     if usuario_filtro:
-    base_query += " AND usuario LIKE ?"
-    params.append(f"%{usuario_filtro}%")
+        base_query += " AND usuario LIKE ?"
+        params.append(f"%{usuario_filtro}%")
     if acao_filtro:
-    base_query += " AND acao LIKE ?"
-    params.append(f"%{acao_filtro}%")
+        base_query += " AND acao LIKE ?"
+        params.append(f"%{acao_filtro}%")
     
     # Primeiro conta o total para a paginação
     cursor.execute(f"SELECT COUNT(*) {base_query}", tuple(params))
@@ -1629,9 +1662,9 @@ def buscar_logs(limit=50, offset=0, data_inicio=None, data_fim=None, usuario_fil
     
     # Depois busca os dados da página
     if IS_POSTGRES:
-    fmt_data = "TO_CHAR(criado_em - INTERVAL '3 hours', 'DD/MM/YYYY HH24:MI')"
+        fmt_data = "TO_CHAR(criado_em - INTERVAL '3 hours', 'DD/MM/YYYY HH24:MI')"
     else:
-    fmt_data = "strftime('%d/%m/%Y %H:%M', criado_em, '-3 hours')"
+        fmt_data = "strftime('%d/%m/%Y %H:%M', criado_em, '-3 hours')"
     query = f"""
     SELECT usuario, acao, detalhe, ip, localizacao, 
            {fmt_data} as data_fmt
